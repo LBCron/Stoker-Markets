@@ -8,15 +8,14 @@ import styles from "./CoinTable.module.css";
  * listed. `label` names the list for assistive technology and the tests; `busy` dims the rows while a new answer is
  * on its way.
  */
-export function CoinTable({ launches, now, label = "Coins", busy = false, className = "" }: {
+export function CoinTable({ launches, now, label = "Coins", busy = false }: {
   launches: LaunchSummary[];
   now: number;
   label?: string;
   busy?: boolean;
-  className?: string;
 }) {
   return (
-    <div className={`card ${styles.table} ${className}`}>
+    <div className={`card ${styles.table}`}>
       {/* The names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
       <div className={styles.columns} aria-hidden>
         {COLUMNS.map((c) => (
