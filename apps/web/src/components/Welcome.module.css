@@ -1,25 +1,30 @@
 /* The welcome: a cover panel across the top of the card (the picture's slot, the ring in it until the owner's pick), the
    title and three lines centred under it, one button, the terms in the caption size. Sized like a first-visit card
-   (owner, 2026-10-31): 620px at 1440, the panel 2:1. */
+   (owner, 2026-10-31): 620px at 1440, the panel 2:1. The dialog keeps the browser's own modal overflow (a max height
+   and a scroll), so a short window still reaches Continue; the panel rounds its own top corners to the card's. */
 .dialog {
-  width: min(620px, calc(100vw - 32px));
+  width: 620px;
   padding: 0 0 28px;
   text-align: center;
-  /* The panel's corners follow the card's. */
-  overflow: clip;
 }
 
-/* The picture's panel: the mark's dark tile in both schemes, so the image is one image everywhere, as the mark is. */
+/* The picture's panel: the mark's dark tile in both schemes, so the image is one image everywhere, as the mark is. The
+   picture is laid over the panel's box, so a file of any proportion is cropped to 2:1 rather than stretching the panel. */
 .cover {
+  position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 2 / 1;
   margin: 0 0 24px;
+  border-start-start-radius: calc(var(--radius-card) - 1px);
+  border-start-end-radius: calc(var(--radius-card) - 1px);
   background: var(--tile);
+  overflow: hidden;
 }
 
 .cover img {
-  display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -46,6 +51,7 @@
 .terms {
   margin: 14px 36px 0;
   color: var(--ink-3);
+  text-wrap: balance;
 }
 
 .terms a {
@@ -65,12 +71,9 @@
     padding: 0 0 calc(24px + var(--radius-card) + env(safe-area-inset-bottom, 0px));
   }
 
-  .cover {
-    margin-bottom: 8px;
-  }
-
   .cover:not(:has(img)) {
     aspect-ratio: auto;
+    margin-bottom: 8px;
     padding-top: 28px;
     background: none;
   }

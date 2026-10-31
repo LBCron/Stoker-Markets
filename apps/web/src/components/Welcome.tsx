@@ -8,7 +8,7 @@ import { LEGAL_LINKS } from "@/lib/site";
 import styles from "./Welcome.module.css";
 
 /** The ring's size in the cover panel, standing in until the owner picks the welcome's picture (the marketing folder's round). */
-const RING = 120;
+const RING = 160;
 
 const [TERMS, PRIVACY, RISK] = LEGAL_LINKS;
 
@@ -53,7 +53,8 @@ export function Welcome() {
         if (e.target === e.currentTarget && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) accept();
       }}
     >
-      {/* The picture's slot: a 2:1 panel across the card's top; the chosen image goes here as an `img`, the ring until then. */}
+      {/* The picture's slot: a 2:1 panel across the card's top. The chosen file replaces the ring as a plain `img` from `public`
+          (`<img src="/welcome.jpg" width={1248} height={624} alt="" />`), which the panel's styles and the phone sheet's `:has(img)` read. */}
       <div className={styles.cover}>
         <Ring size={RING} className={styles.ring} />
       </div>
