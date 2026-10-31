@@ -7,7 +7,7 @@ import { WELCOME } from "@/lib/legal";
 import { LEGAL_LINKS } from "@/lib/site";
 import styles from "./Welcome.module.css";
 
-/** The ring's one size here, above the title, until the character's still replaces it (the marketing folder's job). */
+/** The ring's size in the cover panel, standing in until the owner picks the welcome's picture (the marketing folder's round). */
 const RING = 120;
 
 const [TERMS, PRIVACY, RISK] = LEGAL_LINKS;
@@ -53,7 +53,10 @@ export function Welcome() {
         if (e.target === e.currentTarget && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) accept();
       }}
     >
-      <Ring size={RING} className={styles.ring} />
+      {/* The picture's slot: a 2:1 panel across the card's top; the chosen image goes here as an `img`, the ring until then. */}
+      <div className={styles.cover}>
+        <Ring size={RING} className={styles.ring} />
+      </div>
       <h2 id="welcome-title" className={`t-h2 ${styles.title}`}>{WELCOME.title}</h2>
       {WELCOME.lines.map((line) => (
         <p key={line} className={`t-body ${styles.line}`}>{line}</p>
