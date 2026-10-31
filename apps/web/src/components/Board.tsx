@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
-import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_FACTS, SORT_LABELS, SORT_ORDER, type BoardLayout, type PairedChip } from "@/lib/board";
+import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_FACTS, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
 import { timeAgo } from "@/lib/format";
 import { SEARCH_HASH } from "@/lib/search";
 import { AssetBar } from "./AssetBar";
@@ -28,12 +28,11 @@ const sameQuery = (a: BoardQuery, b: BoardQuery) =>
  * sorted or filtered board can be shared and survives a reload. The controls are there before the first coin too, so
  * a visitor to a new platform sees what the board does. `renderedAt` is the server's clock at render, so "launched Xs
  * ago" hydrates to the same text the server sent. The status line names the list as the fact it is and says when it
- * last updated, and says so when the feed has stopped answering (#135). `layout` is the page's shape: scrolling, or
- * one fixed viewport with the rows scrolling inside the table (`?board=fixed`, a candidate until the owner picks).
+ * last updated, and says so when the feed has stopped answering (#135).
  */
 export function Board({
-  initial, initialMore, initialQuery, quotes: initialQuotes, renderedAt, layout = "scroll",
-}: { initial: LaunchSummary[]; initialMore: boolean; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number; layout?: BoardLayout }) {
+  initial, initialMore, initialQuery, quotes: initialQuotes, renderedAt,
+}: { initial: LaunchSummary[]; initialMore: boolean; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number }) {
   const [launches, setLaunches] = useState(initial);
   const [more, setMore] = useState(initialMore);
   const [query, setQuery] = useState(initialQuery);
@@ -133,11 +132,11 @@ export function Board({
       {shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}
     </EmptyState>
   ) : (
-    <CoinTable launches={launches} now={now} busy={loading} className={styles.table} />
+    <CoinTable launches={launches} now={now} busy={loading} />
   );
 
   return (
-    <section className={`shell grid ${styles.section} ${layout === "fixed" ? styles.fixed : ""}`} aria-labelledby="board-title" data-board={layout}>
+    <section className={`shell grid ${styles.section}`} aria-labelledby="board-title">
       <div className={`col-12 ${styles.main}`}>
         <div className={styles.head}>
           <h2 id="board-title" className={`t-h2 ${styles.title}`}>Coins</h2>

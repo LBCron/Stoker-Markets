@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { listLaunchQuotes, listLaunches } from "@/lib/api";
-import { boardLayoutFrom, boardQueryFrom } from "@/lib/board";
+import { boardQueryFrom } from "@/lib/board";
 import { Board } from "@/components/Board";
 
 export const metadata: Metadata = {
@@ -22,7 +22,6 @@ export default async function CoinsPage({ searchParams }: Props) {
       initialQuery={query}
       quotes={quotes.quotes}
       renderedAt={Date.now()}
-      layout={boardLayoutFrom(params)}
     />
   );
 }

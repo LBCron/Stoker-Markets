@@ -21,17 +21,6 @@ export const SORT_FACTS: Record<LaunchSort, string> = {
 };
 
 /**
- * The board's layout (#135, the owner's pick to come): `scroll` is the page as built, which scrolls like any other;
- * `fixed` is one viewport, the rows scrolling inside the table and the page itself still, a terminal's shape, behind
- * `?board=fixed` until the owner picks.
- */
-export type BoardLayout = "scroll" | "fixed";
-export function boardLayoutFrom(params: Record<string, string | string[] | undefined>): BoardLayout {
-  const v = params.board;
-  return (Array.isArray(v) ? v[0] : v) === "fixed" ? "fixed" : "scroll";
-}
-
-/**
  * A price change for a table cell: the API's fraction as a signed percentage ("+12.3%", "-0.8%", "0.0%"), one decimal
  * under a hundred and none above, so a column keeps one precision. Null where there is no trade to measure from.
  */

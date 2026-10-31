@@ -104,67 +104,6 @@
   font-size: var(--text-caption);
 }
 
-/*
-  The fixed layout (`?board=fixed`, a candidate): the page is one viewport. The body stops scrolling and loses the
-  footer, the main column fills the window under the header, and the table takes what is left with its rows
-  scrolling inside it, the column names staying at its top. The landing and every other page keep scrolling.
-*/
-:global(body:has([data-board="fixed"])) {
-  height: 100dvh;
-  overflow: hidden;
-}
-
-:global(body:has([data-board="fixed"]) main) {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-:global(body:has([data-board="fixed"]) main > .terminal) {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-:global(body:has([data-board="fixed"]) main ~ footer) {
-  display: none;
-}
-
-.fixed {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding-bottom: 16px;
-}
-
-.fixed .main {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 100%;
-}
-
-.fixed .table {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.fixed .table > div {
-  position: static;
-  flex: none;
-}
-
-.fixed .table > ul {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
 /* One column of controls: the search takes the full width, the sorts sit two by two. */
 @media (max-width: 640px) {
   .head {
