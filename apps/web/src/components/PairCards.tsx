@@ -41,7 +41,8 @@ export function QuoteCard({ launch, quoteAsset }: { launch: LaunchSummary; quote
       <div className={styles.quoteHead}>
         <QuoteLogo quote={q} size={36} />
         <div className={styles.quoteWords}>
-          <h2 id="quote-card-title" className={`t-h3 ${styles.quoteTitle}`}>{ticker}</h2>
+          {/* The ticker is the way to the asset's page (owner, 2026-10-31: no "Everything about" link under the card). */}
+          <h2 id="quote-card-title" className={`t-h3 ${styles.quoteTitle}`}><Link href={`/assets/${q.mint}`}>{ticker}</Link></h2>
           <p className={styles.quoteKind}>{kind}</p>
         </div>
         {quoteAsset?.labels === null || quoteAsset === null ? (
@@ -66,7 +67,6 @@ export function QuoteCard({ launch, quoteAsset }: { launch: LaunchSummary; quote
           <dd>{quoteAsset?.graduationTarget ? <><Price value={Number(quoteAsset.graduationTarget.raw) / 10 ** q.decimals} /> {ticker}</> : "-"}</dd>
         </div>
       </dl>
-      <Link href={`/assets/${q.mint}`} className={styles.link}>Everything about {ticker}</Link>
     </section>
   );
 }

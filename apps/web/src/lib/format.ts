@@ -80,6 +80,16 @@ export function formatUtcDay(day: string) {
   return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" });
 }
 
+/** A span of time in its largest whole unit, as people say it: 7 days, 3 hours, 45 seconds. */
+export function formatDuration(ms: number) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  const unit = (n: number, name: string) => `${n} ${name}${n === 1 ? "" : "s"}`;
+  if (s < 60) return unit(s, "second");
+  if (s < 3600) return unit(Math.round(s / 60), "minute");
+  if (s < 86_400) return unit(Math.round(s / 3600), "hour");
+  return unit(Math.round(s / 86_400), "day");
+}
+
 export function timeAgo(iso: string, now = Date.now()) {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
   if (s < 60) return `${s}s ago`;

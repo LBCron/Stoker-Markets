@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
-import { explorerUrl, formatShare, formatUtc, isSol, quoteTicker } from "@/lib/format";
+import { explorerUrl, formatDuration, formatShare, formatUtc, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
 import { Address } from "@/components/Address";
@@ -37,8 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /**
  * A coin's page (#134, phase 3 of the rework): a breadcrumb, a one-line title row (the lockup at 40px, the pair, the
  * name with the coin's links, the three trust marks and the price with the day's change), the market (the chart with
- * the graduation bar and the activity under it, the trade panel docked beside it with the pair's other half), and
- * below the fold one About block with the description, the launch's details and the addresses.
+ * the graduation bar and the activity under it, the trade panel docked beside it with the pair's other half and, under
+ * those, the About block with the description, the launch's details and the addresses: owner, 2026-10-31, the facts
+ * belong under the trade panel as the terminals place them), and below the grid only what some coins have: the Quote
+ * Asset's labels, the rewards and a finished Airdrop.
  */
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
@@ -58,6 +60,8 @@ export default async function CoinPage({ params, searchParams }: Props) {
   const earns = creatorEarnings(platform);
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
   const protectionOpen = new Date(launch.protection.until).getTime() <= Date.now();
+  // The window's length as well as its end: a short window ends the minute the coin launched, which read as the same date twice (owner, 2026-10-31).
+  const protectionLength = formatDuration(new Date(launch.protection.until).getTime() - new Date(launch.createdAt).getTime());
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
   const origin = await siteOrigin();
@@ -87,6 +91,113 @@ export default async function CoinPage({ params, searchParams }: Props) {
       ? "The curve sold out; Raydium is moving the coin to its pool."
       : "On its bonding curve until the Graduation Target is raised; then locked in a Raydium pool.";
 
+  // The About card and the addresses, handed to the market component for the column under the trade panel.
+  const facts = (
+    <>
+      <div className={`card ${styles.aboutCard}`}>
+        <h2 id="about-title" className={`t-h3 ${styles.aboutTitle}`}>About {launch.symbol}</h2>
+        {launch.description && <p className={styles.description}>{launch.description}</p>}
+        <dl className={styles.facts}>
+          <div>
+            <dt>Launch type</dt>
+            <dd>{launch.rewardTax ? "Reward Launch" : "Standard coin"}</dd>
+          </div>
+          {launch.rewardTax && (
+            <div>
+              <dt>Reward tax</dt>
+              <dd>
+                {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.rewardTax.payout === "coin" ? launch.symbol : quote}
+                {launch.rewardTax.locked ? (
+                  <span>
+                    Fixed for good:{" "}
+                    <a href={explorerUrl("tx", launch.rewardTax.locked.signature, platform)} target="_blank" rel="noreferrer">
+                      authority given up
+                    </a>
+                  </span>
+                ) : (
+                  <span>Fixed: LaunchLab holds the tax authority until graduation</span>
+                )}
+              </dd>
+            </div>
+          )}
+          {trust && (
+            <div>
+              <dt>First Buy</dt>
+              <dd>{trust.creator.firstBuy ? `${formatShare(trust.creator.firstBuy.share)} of the supply, bought by the Creator at launch` : "None: the Creator bought nothing at launch"}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Creator earns</dt>
+            <dd>
+              {earns.summary}
+              <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Liquidity</dt>
+            <dd>{liquidity}</dd>
+          </div>
+          <div>
+            <dt>Launched</dt>
+            <dd>
+              <time dateTime={launch.createdAt}>{formatUtc(launch.createdAt)}</time>
+            </dd>
+          </div>
+          {launch.graduation && (
+            <div>
+              <dt>Graduated</dt>
+              <dd>
+                <time dateTime={launch.graduation.graduatedAt}>{formatUtc(launch.graduation.graduatedAt)}</time>
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt>Copy protection</dt>
+            {/* `data-until`: the suite sizes the time inside this sentence to the date's width for its mask. */}
+            <dd data-until>
+              {protectionLength} from launch
+              <span>
+                {protectionOpen ? "Ended " : "Until "}
+                <time dateTime={launch.protection.until}>{formatUtc(launch.protection.until)}</time>
+                {protectionOpen
+                  ? ". Anyone may use this coin's name, ticker and image again."
+                  : ": nobody else can launch a coin here with this name, ticker or image."}
+                {launch.copyOf && (
+                  <>
+                    {" "}
+                    {copyKind(launch.copyOf.kind)}{" "}
+                    <Link href={`/coin/${launch.copyOf.mint}`}>{launch.copyOf.name} ({launch.copyOf.symbol})</Link>, launched{" "}
+                    <time dateTime={launch.copyOf.launchedAt}>{formatUtc(launch.copyOf.launchedAt)}</time>
+                  </>
+                )}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt>Elsewhere</dt>
+            <dd className={styles.elsewhere}>
+              {elsewhere.map(([label, href]) => (
+                <a key={label} href={href} className="chip" target="_blank" rel="noreferrer">{label}</a>
+              ))}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <dl className={`card ${styles.addresses}`} aria-label="Addresses">
+        {addresses.map(([label, value, kind]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>
+              <Address value={value} kind={kind} platform={platform} />
+              <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </>
+  );
+
   return (
     <article className={`shell ${styles.page}`}>
       <JsonLd data={breadcrumbList(origin, [["Home", "/"], ["Coins", "/coins"], [`${launch.symbol} / ${quote}`, `/coin/${launch.mint}`]])} />
@@ -102,123 +213,27 @@ export default async function CoinPage({ params, searchParams }: Props) {
           client boundary as a prop warned about missing keys whenever one of its pieces streamed in late (2026-10-31). */}
       <CoinMarket
         initial={launch} platform={platform} quoteAsset={quoteAsset} links={links} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders}
-        initialTrust={trust} renderedAt={Date.now()} referrer={referrer} notice={!airdropDone && airdropCard}
+        initialTrust={trust} renderedAt={Date.now()} referrer={referrer} notice={!airdropDone && airdropCard} facts={facts}
       />
 
-      <section className={`grid ${styles.about}`} aria-labelledby="about-title">
-        <div className={`card col-7 ${styles.aboutCard}`}>
-          <h2 id="about-title" className={`t-h3 ${styles.aboutTitle}`}>About {launch.symbol}</h2>
-          {launch.description && <p className={styles.description}>{launch.description}</p>}
-          <dl className={styles.facts}>
-            <div>
-              <dt>Launch type</dt>
-              <dd>{launch.rewardTax ? "Reward Launch" : "Standard coin"}</dd>
-            </div>
-            {launch.rewardTax && (
-              <div>
-                <dt>Reward tax</dt>
-                <dd>
-                  {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.rewardTax.payout === "coin" ? launch.symbol : quote}
-                  {launch.rewardTax.locked ? (
-                    <span>
-                      Fixed for good:{" "}
-                      <a href={explorerUrl("tx", launch.rewardTax.locked.signature, platform)} target="_blank" rel="noreferrer">
-                        authority given up
-                      </a>
-                    </span>
-                  ) : (
-                    <span>Fixed: LaunchLab holds the tax authority until graduation</span>
-                  )}
-                </dd>
-              </div>
-            )}
-            {trust && (
-              <div>
-                <dt>First Buy</dt>
-                <dd>{trust.creator.firstBuy ? `${formatShare(trust.creator.firstBuy.share)} of the supply, bought by the Creator at launch` : "None: the Creator bought nothing at launch"}</dd>
-              </div>
-            )}
-            <div>
-              <dt>Creator earns</dt>
-              <dd>
-                {earns.summary}
-                <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
-              </dd>
-            </div>
-            <div>
-              <dt>Liquidity</dt>
-              <dd>{liquidity}</dd>
-            </div>
-            <div>
-              <dt>Launched</dt>
-              <dd>
-                <time dateTime={launch.createdAt}>{formatUtc(launch.createdAt)}</time>
-              </dd>
-            </div>
-            {launch.graduation && (
-              <div>
-                <dt>Graduated</dt>
-                <dd>
-                  <time dateTime={launch.graduation.graduatedAt}>{formatUtc(launch.graduation.graduatedAt)}</time>
-                </dd>
-              </div>
-            )}
-            <div>
-              <dt>Copy protection {protectionOpen ? "ended" : "until"}</dt>
-              <dd>
-                <time dateTime={launch.protection.until}>{formatUtc(launch.protection.until)}</time>
-                <span>
-                  {protectionOpen
-                    ? "Anyone may use this coin's name, ticker and image again."
-                    : "Until then nobody else can launch a coin here with this name, ticker or image."}
-                  {launch.copyOf && (
-                    <>
-                      {" "}
-                      {copyKind(launch.copyOf.kind)}{" "}
-                      <Link href={`/coin/${launch.copyOf.mint}`}>{launch.copyOf.name} ({launch.copyOf.symbol})</Link>, launched{" "}
-                      <time dateTime={launch.copyOf.launchedAt}>{formatUtc(launch.copyOf.launchedAt)}</time>
-                    </>
-                  )}
-                </span>
-              </dd>
-            </div>
-            <div>
-              <dt>Elsewhere</dt>
-              <dd className={styles.elsewhere}>
-                {elsewhere.map(([label, href]) => (
-                  <a key={label} href={href} className="chip" target="_blank" rel="noreferrer">{label}</a>
-                ))}
-              </dd>
-            </div>
-          </dl>
-        </div>
+      {(quoteAsset && !isSol(launch.quote)) || rewards || airdropDone ? (
+        <section className={`grid ${styles.about}`} aria-label="More about this coin">
 
-        <dl className={`card col-5 ${styles.addresses}`} aria-label="Addresses">
-          {addresses.map(([label, value, kind]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>
-                <Address value={value} kind={kind} platform={platform} />
-                <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
-              </dd>
-            </div>
-          ))}
-        </dl>
-
-        {quoteAsset && !isSol(launch.quote) && (
-          <section className={`card ${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
-            <h2 id="quote-labels-title" className={`t-h3 ${styles.quoteLabelsTitle}`}>Paired with {quote}</h2>
-            <p className={styles.quoteLabelsNote}>
-              Every trade of {launch.symbol} is paid in {quote}. What its mint and the token list say about {quote}; each label informs
-              and none stops a trade.
-            </p>
-            <QuoteLabelList quote={quoteAsset} />
-            <Link href={`/assets/${quoteAsset.mint}`} className={styles.factLink}>Everything about {quote}</Link>
-          </section>
-        )}
-        {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
-        {airdropDone && <div className={styles.wide}>{airdropCard}</div>}
-      </section>
+          {quoteAsset && !isSol(launch.quote) && (
+            <section className={`card ${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
+              {/* The ticker is the way to the asset's page (owner, 2026-10-31: no "Everything about" link). */}
+              <h2 id="quote-labels-title" className={`t-h3 ${styles.quoteLabelsTitle}`}>Paired with <Link href={`/assets/${quoteAsset.mint}`}>{quote}</Link></h2>
+              <p className={styles.quoteLabelsNote}>
+                Every trade of {launch.symbol} is paid in {quote}. What its mint and the token list say about {quote}; each label informs
+                and none stops a trade.
+              </p>
+              <QuoteLabelList quote={quoteAsset} />
+            </section>
+          )}
+          {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
+          {airdropDone && <div className={styles.wide}>{airdropCard}</div>}
+        </section>
+      ) : null}
     </article>
   );
 }

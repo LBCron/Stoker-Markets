@@ -50,12 +50,13 @@ const HOLDERS_REFRESH_MS = 12_000;
 /**
  * The live part of a coin page (#134, phase 3 of the rework): the title row with the price, the day's change and the
  * three trust marks (which open the "Before you buy" card), then the chart in eight columns with the graduation bar and
- * the trades and holders as tabs under it, and the trade panel docked in the other four with the pair's other half under
- * it, all kept up to date from the indexed trades and the chain. After Graduation the same page trades in the coin's
+ * the trades and holders as tabs under it, and the trade panel docked in the other four with the pair's other half and
+ * the coin's facts under it (owner, 2026-10-31: the About block sits under the trade panel, as the terminals place it),
+ * all kept up to date from the indexed trades and the chain. After Graduation the same page trades in the coin's
  * Raydium pool. On a phone the columns stack and a Buy / Sell bar at the foot brings the trade panel up.
  */
 export function CoinMarket({
-  initial, platform, quoteAsset, links, initialTrades, initialCandles, initialHolders, initialTrust, renderedAt, referrer = null, notice = null,
+  initial, platform, quoteAsset, links, initialTrades, initialCandles, initialHolders, initialTrust, renderedAt, referrer = null, notice = null, facts = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
@@ -65,6 +66,8 @@ export function CoinMarket({
   links: CoinLink[];
   /** Something the page puts between the title row and the market: an Airdrop its Creator still has to send. */
   notice?: ReactNode;
+  /** The coin's facts and addresses, rendered by the page, under the trade panel and the pair's other half. */
+  facts?: ReactNode;
   /** From the page's `?ref=` link: the wallet that earns the referral share fee on the visitor's curve trades. */
   referrer?: string | null;
   initialTrades: Trade[];
@@ -190,7 +193,7 @@ export function CoinMarket({
       <div className={`grid ${styles.market}`}>
         <div className={`col-8 ${styles.main}`}>
           <div className={styles.chart}>
-            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} trades={trades} volume24h={launch.market.volume24h.quote} />
+            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} volume24h={launch.market.volume24h.quote} />
           </div>
           <div className={styles.progress}>
             <CurveProgress launch={launch} platform={platform} />
@@ -217,6 +220,7 @@ export function CoinMarket({
           <div className={styles.aside}>
             <QuoteCard launch={launch} quoteAsset={quoteAsset} />
           </div>
+          {facts && <div className={styles.facts}>{facts}</div>}
         </div>
       </div>
 

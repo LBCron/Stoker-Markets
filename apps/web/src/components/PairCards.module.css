@@ -24,7 +24,7 @@
   background: var(--bg);
 }
 
-/* The Quote Asset's card: the head with its tag, three facts in a row, the link. */
+/* The Quote Asset's card: the head with its tag and three facts in a row; the ticker is the link to the asset's page. */
 .quoteCard {
   display: flex;
   flex-direction: column;
@@ -46,6 +46,16 @@
 
 .quoteTitle {
   margin: 0;
+}
+
+.quoteTitle a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+
+.quoteTitle a:hover {
+  color: var(--accent);
 }
 
 .quoteKind {
@@ -72,18 +82,4 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums slashed-zero;
   overflow-wrap: anywhere;
-}
-
-.link {
-  align-self: flex-start;
-  color: var(--accent);
-  font-size: var(--text-ui);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.link:hover {
-  color: var(--accent-strong);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }

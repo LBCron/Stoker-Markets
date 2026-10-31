@@ -77,12 +77,6 @@
   font-size: var(--text-label);
 }
 
-.few {
-  margin: 0;
-  font-size: var(--text-label);
-  color: var(--ink-3);
-}
-
 .plot {
   position: relative;
   height: 420px;

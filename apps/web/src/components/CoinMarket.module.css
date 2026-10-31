@@ -168,16 +168,15 @@
   min-width: 0;
 }
 
-/*
-  The fixed column keeps the one action in view while the chart column scrolls, on a window tall enough to show the
-  whole column: pinned on a shorter one, its foot would be out of reach.
-*/
-@media (min-height: 1000px) {
-  .side {
-    position: sticky;
-    top: calc(var(--header-h) + 16px);
-  }
+/* The facts under the pair's other half: the About card and the addresses, each a card of its own, stacked like the rest. */
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
+
+/* The side column holds the coin's facts too (owner, 2026-10-31), so it is taller than most windows and no longer sticks. */
 
 .trade {
   scroll-margin-top: calc(var(--header-h) + 8px);
@@ -232,7 +231,7 @@
   display: none;
 }
 
-/* One column: the title, the price and the marks stack, the columns dissolve so their cards can be reordered: the chart, the graduation, the trade panel, the activity, the pair's other half last. */
+/* One column: the title, the price and the marks stack, the columns dissolve so their cards can be reordered: the chart, the graduation, the trade panel, the activity, the pair's other half, the facts last. */
 @media (max-width: 900px) {
   .head {
     gap: 8px 16px;
@@ -268,6 +267,7 @@
   .trade { order: 3; }
   .tabs { order: 4; }
   .aside { order: 5; }
+  .facts { order: 6; }
 }
 
 @media (max-width: 767px) {

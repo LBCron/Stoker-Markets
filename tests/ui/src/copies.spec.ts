@@ -33,7 +33,8 @@ test("the launch form's copy check names the protected coin, and the coin page s
   expect(wallet.keypair.publicKey.equals(creator.publicKey)).toBe(false);
   await page.goto(`/coin/${mint}`);
   // A `dt` has no accessible name (the term role takes none from its content), so it is found by its text.
-  const facts = page.locator("dt", { hasText: "Copy protection until" }).locator("xpath=following-sibling::dd[1]");
-  await expect(facts).toContainText("Until then nobody else can launch a coin here with this name, ticker or image.");
+  const facts = page.locator("dt", { hasText: "Copy protection" }).locator("xpath=following-sibling::dd[1]");
+  await expect(facts).toContainText("45 seconds from launch");
+  await expect(facts).toContainText("nobody else can launch a coin here with this name, ticker or image.");
   await expect(facts.locator("time")).toHaveAttribute("dateTime", /^\d{4}-/);
 });

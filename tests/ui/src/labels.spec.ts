@@ -48,7 +48,9 @@ test("a coin page shows what is known about its Quote Asset, and a SOL-paired co
   await expect(labels.nth(2)).toContainText("1% transfer fee");
   await expect(labels.nth(2)).toContainText("The issuer withholds 1% of every transfer of TAXQ");
   await expect(labels.nth(2)).toContainText("Read from the mint on-chain");
-  await expect(section.getByRole("link", { name: "Everything about TAXQ" })).toHaveAttribute("href", `/assets/${QUOTES.TAXQ.toBase58()}`);
+  // The ticker in the heading is the way to the asset's page (owner, 2026-10-31: no "Everything about" link).
+  await expect(section.getByRole("heading", { level: 2 }).getByRole("link", { name: "TAXQ" })).toHaveAttribute("href", `/assets/${QUOTES.TAXQ.toBase58()}`);
+  await expect(page.getByRole("region", { name: "TAXQ", exact: true }).getByRole("heading", { level: 2 }).getByRole("link", { name: "TAXQ" })).toHaveAttribute("href", `/assets/${QUOTES.TAXQ.toBase58()}`);
 
   const plain = await launchViaApi(creator, { name: "Plain Pair", symbol: "PLN" });
   await page.goto(`/coin/${plain}`);

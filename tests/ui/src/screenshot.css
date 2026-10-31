@@ -24,6 +24,11 @@ time {
   width: 13ch;
 }
 
+/* The coin page's Copy Protection end sits inside a sentence too ("Until Nov 7, 2026, 5:47 AM UTC: nobody else..."). */
+[data-until] time {
+  width: 26ch;
+}
+
 /* The latest candle's prices depend on whether the seed trades straddled a minute, so they are masked; a fixed box keeps
    the mask the same size every run. */
 dl[aria-label$="candle"] .mono {

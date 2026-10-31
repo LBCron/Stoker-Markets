@@ -129,7 +129,7 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
 });
 
 /**
- * A coin's page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and a shot of a
+ * A coin's page says the Copy Protection runs "Until" a time inside the stack's 45-second window and "Ended" after it, and a shot of a
  * young seeded coin can land either side of that line depending on the run's speed (the longest coin's light desktop
  * baseline flipped on 2026-10-29, First Light's on 2026-10-30), so a shot waits for the window to end; the label is
  * rendered on the server, so it takes a reload to change.
@@ -137,7 +137,7 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
 async function copyWindowEnded(page: Page) {
   await expect
     .poll(async () => {
-      if (await page.getByText("Copy protection ended").isVisible()) return true;
+      if (await page.getByText("Anyone may use this coin's name, ticker and image again.").isVisible()) return true;
       await page.reload();
       return false;
     }, { timeout: 60_000, intervals: [2_000] })
