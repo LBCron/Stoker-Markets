@@ -279,13 +279,14 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   // The pointer rests on the preset it clicked, which draws its hover; park it so the shot is the same every run.
   await page.mouse.move(0, 0);
-  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  // The quote carries one Fees line and the link to the Fees page (owner, 2026-10-30), no rates.
+  await expect(panel.getByText("Raydium's pool fees and the platform's")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-buy-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
   await panel.getByRole("button", { name: "50%", exact: true }).click();
   await page.mouse.move(0, 0);
-  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  await expect(panel.getByText("Raydium's pool fees and the platform's")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-sell-quote.png", { mask: tradedDynamic(page) });
   // Handed back, so the coin page's top holders look the same in every project whatever order they run in.
   await giveCoins(wallet.keypair, SEED_HOLDER.publicKey, mint, 1_000_000n * 1_000_000n);
@@ -479,13 +480,17 @@ test("creator earnings page of a wallet that never launched", async ({ page }) =
   await snap(page, "creator-empty.png");
 });
 
-test("revenue page", async ({ page, stack }) => {
+test("stats page", async ({ page, stack }) => {
   const revenue = Revenue.parse(await (await fetch(`${stack.apiUrl}/v1/revenue`)).json());
   const ledger = LedgerPage.parse(await (await fetch(`${stack.apiUrl}/v1/ledger?limit=25`)).json());
   await page.goto("/revenue");
-  await expect(page.getByRole("heading", { name: "Platform revenue" })).toBeVisible();
+  // The Platform Token has not launched on the seeded stack, so the page carries its name and the market's empty state.
+  await expect(page.getByRole("heading", { level: 1, name: "STOKER" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet.");
+  await expect(page.getByRole("region", { name: "Key figures" }).getByRole("term")).toHaveCount(4);
+  await expect(page.getByRole("region", { name: "Run the numbers" }).getByRole("textbox")).toHaveCount(2);
   // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
-  const totals = page.getByRole("region", { name: "All time" }).getByRole("listitem");
+  const totals = page.getByRole("region", { name: "Revenue by asset" }).getByRole("listitem");
   await expect(totals).toHaveCount(revenue.totals.length);
   for (const [i, t] of revenue.totals.entries()) await expect(totals.nth(i)).toContainText(t.asset.symbol!);
   const entries = page.getByRole("region", { name: "Ledger" }).getByRole("listitem");
@@ -495,11 +500,20 @@ test("revenue page", async ({ page, stack }) => {
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
   // (7.959784 one run, 7.959779 another), in the summary and in the Ledger's sweep entries alike (the entry's amount
-  // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades.
+  // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades. The annualized figure
+  // divides by the days since the first collection, which is today on the seeded stack, so it holds too.
   await snap(page, "revenue.png", (p) => [
     p.locator("time"),
     p.locator("a.mono"),
     p.locator('dl[aria-labelledby="swept-title"] dd'),
     p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
   ]);
+});
+
+test("fees page", async ({ page }) => {
+  await page.goto("/fees");
+  await expect(page.getByRole("heading", { level: 1, name: "Fees" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Every fee" }).getByRole("row").nth(1)).toBeVisible();
+  // The dated line is the page's one clock.
+  await snap(page, "fees.png", (p) => [p.locator("time")]);
 });
