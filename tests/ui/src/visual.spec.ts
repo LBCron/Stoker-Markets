@@ -509,7 +509,7 @@ test("stats page", async ({ page, stack }) => {
   await page.goto("/revenue");
   // The Platform Token has not launched on the seeded stack, so the page carries its name and the market's empty state.
   await expect(page.getByRole("heading", { level: 1, name: "STOKER" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet.");
+  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet");
   await expect(page.getByRole("region", { name: "Key figures" }).getByRole("term")).toHaveCount(4);
   await expect(page.getByRole("region", { name: "Run the numbers" }).getByRole("textbox")).toHaveCount(2);
   // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
