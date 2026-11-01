@@ -4,7 +4,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { PreparedAirdrop, PreparedLaunch } from "@launchpad/contract";
 import { allowAirdrops, coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
-import { chooseQuote, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
+import { chooseQuote, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review, signButton } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const airdropCard = (page: Page) => page.getByRole("region", { name: "Airdrop" });
@@ -61,7 +61,7 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
   await expect(review(page)).toContainText(`Like any trade, the first buy pays the Platform Fee, and half of it, ${firstBuyShare} SOL, comes back to you as the coin's creator.`);
   expect(wallet.requests).toHaveLength(0);
 
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(`**/coin/${launch.mint}`);
   expect(wallet.requests).toHaveLength(1);
   const bought = BigInt(launch.firstBuy!.amountOut);
@@ -114,7 +114,7 @@ test("a First Buy in USDC is quoted, reviewed and paid in USDC", async ({ page, 
   await expect(review(page)).toContainText(/with your first buy of 20 USDC for [\d,]+ DFST .* It graduates at 150 USDC raised\./);
   await expect(review(page)).toContainText("Your wallet pays the USDC and about");
 
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(`**/coin/${launch.mint}`);
   expect(await coinBalance(wallet.keypair.publicKey, launch.mint)).toBe(BigInt(launch.firstBuy!.amountOut));
   const history = page.getByRole("region", { name: "Trades" });
@@ -160,7 +160,7 @@ test("a launch the network refuses says why, and trying again launches that same
 
   // The Creator spends their SOL elsewhere between reviewing and signing.
   await drain(wallet.keypair, 0.01);
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await expect(formAlert(page)).toHaveText(
     "Your wallet no longer has enough SOL to pay for the launch, so it wasn't sent and nothing was created. Add SOL and try again.",
   );
@@ -170,7 +170,7 @@ test("a launch the network refuses says why, and trying again launches that same
   const again = nextPrepared(page);
   await notConfirmed(page).getByRole("button", { name: "Try again" }).click();
   expect((await again).mint).toBe(first.mint);
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(`**/coin/${first.mint}`);
   expect(wallet.requests).toHaveLength(2);
   expect((await launchesNamed("Second Try")).map((l) => l.mint)).toEqual([first.mint]);
@@ -196,7 +196,7 @@ test("when a launch can't be confirmed, trying again finds the coin instead of l
   const prepared = nextPrepared(page);
   await page.getByRole("button", { name: "Review launch" }).click();
   const launch = await prepared;
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
 
   await expect(formAlert(page)).toHaveText("We couldn't confirm whether your coin launched. Check your connection, then try again.");
   // It may have launched, so the Creator can't start over with a new coin, only check and try again.

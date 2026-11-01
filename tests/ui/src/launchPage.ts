@@ -17,23 +17,32 @@ export async function connectWallet(page: Page) {
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
 }
 
+/** Fills the links on the launch step, by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words. */
+async function fillLinks(page: Page, coin: Partial<typeof COIN>) {
+  if (!coin.website && !coin.x && !coin.telegram) return;
+  await toStep(page, "launch");
+  if (coin.telegram) await page.getByRole("textbox", { name: "Telegram" }).fill(coin.telegram);
+  if (coin.x) await page.getByRole("textbox", { name: /^X\b/ }).fill(coin.x);
+  if (coin.website) await page.getByLabel("Website").fill(coin.website);
+  await toStep(page, "coin");
+}
+
 export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
   // The tracer keeps the fixture's picture; every other coin gets one of its own, since Copy Protection refuses a second
   // coin with a launched coin's image for the stack's window.
   const symbol = coin.symbol ?? COIN.symbol;
   const buffer = symbol === COIN.symbol ? COIN_PNG : coinImage(symbol);
+  await toStep(page, "coin");
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer });
   await page.getByLabel("Name").fill(coin.name ?? COIN.name);
   await page.getByLabel("Ticker").fill(coin.symbol ?? COIN.symbol);
   if (coin.description) await page.getByLabel("Description").fill(coin.description);
-  if (coin.website) await page.getByLabel("Website").fill(coin.website);
-  // The social fields by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words.
-  if (coin.x) await page.getByRole("textbox", { name: /^X\b/ }).fill(coin.x);
-  if (coin.telegram) await page.getByRole("textbox", { name: "Telegram" }).fill(coin.telegram);
+  await fillLinks(page, coin);
 }
 
 /** Sets the launch options: a First Buy in SOL, and an Airdrop list as the Creator would type it. */
 export async function fillOptions(page: Page, o: { firstBuy?: string; airdrop?: string }) {
+  await toStep(page, "launch");
   if (o.firstBuy !== undefined) await page.getByLabel(/^First buy/).fill(o.firstBuy);
   if (o.airdrop !== undefined) {
     await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
@@ -41,16 +50,35 @@ export async function fillOptions(page: Page, o: { firstBuy?: string; airdrop?: 
   }
 }
 
+/** The form's steps (phase 5): on a phone one shows at a time, on a desktop the index scrolls to the section. */
+export type StepId = "coin" | "pair" | "launch" | "review";
+
+/** Goes to a step: a no-op in effect on a desktop, where every step is in view, and the way to a hidden one on a phone. */
+export async function toStep(page: Page, step: StepId) {
+  const label = { coin: "Coin", pair: "Pair", launch: "Launch", review: "Review" }[step];
+  await page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: label }).click();
+}
+
+/** Opens the full picker from the pair step's fourth cell, which names the asset chosen from it once there is one. */
+export async function openPicker(page: Page) {
+  await toStep(page, "pair");
+  await page.getByRole("button", { name: /Choose another Quote Asset/ }).click();
+  await expect(page.getByRole("dialog", { name: "Pair with" })).toBeVisible();
+}
+
 /**
- * Picks a Quote Asset on the form: searches its ticker, checks its card (a radio named by the card's whole text, which
- * starts with the ticker), then clears the search so every card is back in view.
+ * Picks a Quote Asset on the form: opens the picker, searches its ticker and checks its card (a radio named by the
+ * card's whole text, which starts with the ticker), which closes the picker.
  */
 export async function chooseQuote(page: Page, ticker: string) {
-  const search = page.getByRole("searchbox", { name: "Search Quote Assets" });
-  await search.fill(ticker);
+  await openPicker(page);
+  await page.getByRole("searchbox", { name: "Search Quote Assets" }).fill(ticker);
   await page.getByRole("radiogroup", { name: "Pair with" }).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) }).check();
-  await search.fill("");
+  await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
 }
+
+/** The one action once the launch is reviewed: "Stoke TRCR for 0.0213 SOL", the exact cost from the simulation. */
+export const signButton = (page: Page) => review(page).getByRole("button", { name: /^Stoke \S+ for / });
 
 export const disclaimer = (page: Page) => page.getByRole("dialog", { name: "Before you launch" });
 export const formAlert = (page: Page) => page.getByRole("main").getByRole("alert");

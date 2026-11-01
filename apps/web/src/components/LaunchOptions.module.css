@@ -244,12 +244,6 @@
   overflow-wrap: anywhere;
 }
 
-/* The Payout Asset on a line of its own, so the two Reward Launch cards differ where the eye lands. */
-.typeName > span {
-  display: block;
-  color: var(--accent);
-}
-
 /* A card's state beside its name, not under it: the Holder rewards card's "Coming soon" until #113 is built. */
 .typeName > .typeTag {
   display: inline-flex;
@@ -276,10 +270,6 @@
 .typeCard:has(input:checked) {
   border-color: var(--accent);
   background: var(--plate);
-}
-
-.typeCard:has(input:checked) .typeName > span {
-  color: var(--accent-strong);
 }
 
 .typeCard:has(input:focus-visible) {

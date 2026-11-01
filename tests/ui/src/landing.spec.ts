@@ -32,7 +32,8 @@ test("the pair picker in the hero opens the launch form filled", async ({ page }
   await expect(page).toHaveURL(/\/launch\?.*quote=/);
   await expect(page.getByLabel("Name")).toHaveValue("Tracer Bullet");
   await expect(page.getByLabel("Ticker")).toHaveValue("TRCR");
-  await expect(page.getByRole("radiogroup", { name: "Pair with" }).getByRole("radio", { name: /JTO/ })).toBeChecked();
+  await expect(page.getByRole("button", { name: "JTO chosen. Choose another Quote Asset" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("complementary", { name: "Launch summary" })).toContainText("TRCR paired with JTO");
 });
 
 test("the most traded coin's trade panel stands in the hero", async ({ page }) => {

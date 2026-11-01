@@ -2,7 +2,7 @@
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   COIN_PNG, drain, expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, runFeeCollector, sol, solBalance, test, tradeViaApi } from "./fixtures";
-import { acceptDisclaimer, COIN, connectWallet, disclaimer, fillForm, formAlert, review } from "./launchPage";
+import { COIN, acceptDisclaimer, connectWallet, disclaimer, fillForm, formAlert, review, signButton } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 test("a Creator launches a SOL-paired coin and finds it on the board and its coin page", async ({ page, wallet, stack }) => {
@@ -19,7 +19,7 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   expect(cost).toBeLessThan(0.1);
   expect(wallet.requests).toHaveLength(0);
 
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(/\/coin\/[1-9A-HJ-NP-Za-km-z]{32,44}$/);
   expect(wallet.requests).toHaveLength(1);
   expect(wallet.requests[0]!.message.staticAccountKeys[0]!.equals(wallet.keypair.publicKey)).toBe(true);
@@ -104,7 +104,7 @@ test("declining in the wallet launches nothing and says so", async ({ page, wall
   await page.getByRole("button", { name: "Review launch" }).click();
 
   wallet.declineNext();
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await expect(formAlert(page)).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
   await expect(review(page)).toBeHidden();
   await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();

@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
 import { expect, test } from "./fixtures";
-import { connectWallet, fillForm, review } from "./launchPage";
+import { connectWallet, fillForm, review, signButton } from "./launchPage";
 
 const PREPARE = /^\/v1\/launches\/prepare$/;
 
@@ -45,7 +45,7 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await expect(review(page)).toContainText("It is sold for SOL in small slices and paid out in SOL. Nobody can change the rate or the payout asset, now or later.");
   expect(wallet.requests).toHaveLength(0);
 
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(`**/coin/${launch.mint}`);
   expect(wallet.requests).toHaveLength(1);
   await expect(page.getByText("3% of every transfer, paid out to holders in SOL")).toBeVisible();

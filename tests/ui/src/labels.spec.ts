@@ -4,13 +4,14 @@
 // Labels inform; none stops a launch or a trade.
 import type { Page } from "@playwright/test";
 import { expect, fundedKeypair, launchViaApi, QUOTES, test } from "./fixtures";
-import { chooseQuote, connectWallet } from "./launchPage";
+import { chooseQuote, connectWallet, openPicker } from "./launchPage";
 
 const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
 const card = (page: Page, ticker: string) => group(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
 
 test("the chooser names each Quote Asset's kind and never a label, and choosing a labelled asset stops nothing", async ({ page, wallet }) => {
   await page.goto("/launch");
+  await openPicker(page);
   await expect(group(page).getByRole("radio")).toHaveCount(6);
 
   // No warning sits beside an asset's name: each card says what kind of asset it is (ADR 0010), a fact and not a verdict,
@@ -23,10 +24,12 @@ test("the chooser names each Quote Asset's kind and never a label, and choosing 
   await expect(card(page, "BULLWHALE")).toHaveAccessibleName(/Memes/);
   await expect(card(page, "TAXQ")).toHaveAccessibleName(/Community/);
 
-  // Choosing a labelled asset is like choosing any other: the form shows no label and no disclosure for it.
+  // Choosing a labelled asset is like choosing any other: the form shows no label and no disclosure for it (the picker
+  // closes on the choice; the deepest stock is one of the recommended three, chosen there).
+  await page.getByRole("dialog", { name: "Pair with" }).getByRole("button", { name: "Close" }).click();
   await chooseQuote(page, "NVDAx");
-  await expect(card(page, "NVDAx")).toBeChecked();
-  await expect(page.locator("details")).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: /^NVDAx\b/ })).toBeChecked();
+  await expect(page.locator("details", { hasText: /label|risk|freeze/i })).toHaveCount(0);
   await expect(page.getByRole("list", { name: "NVDAx risk labels" })).toHaveCount(0);
 
   await connectWallet(page);
