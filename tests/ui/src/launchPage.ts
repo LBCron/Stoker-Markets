@@ -43,7 +43,7 @@ export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
 /** Sets the launch options: a First Buy in SOL, and an Airdrop list as the Creator would type it. */
 export async function fillOptions(page: Page, o: { firstBuy?: string; airdrop?: string }) {
   await toStep(page, "launch");
-  if (o.firstBuy !== undefined) await page.getByLabel(/^First buy/).fill(o.firstBuy);
+  if (o.firstBuy !== undefined) await page.getByLabel(/^Amount/).fill(o.firstBuy);
   if (o.airdrop !== undefined) {
     await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
     await page.getByLabel("Wallets and amounts").fill(o.airdrop);

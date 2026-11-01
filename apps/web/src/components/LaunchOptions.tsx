@@ -202,7 +202,7 @@ export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsStat
     <div className={styles.options}>
       <div className={styles.field}>
         <label htmlFor="first-buy">
-          First buy <em>optional</em>
+          Amount <em>optional</em>
         </label>
         <div className={`${styles.amount} ${o.firstBuyProblem ? styles.invalid : ""}`}>
           <input
@@ -228,7 +228,7 @@ export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsStat
               buy before you.
             </>
           ) : (
-            "Your own buy, made in the launch transaction itself, so nobody can buy before you."
+            "Paid in the launch transaction itself; the quote shows what it gets before anything is prepared."
           )}
         </p>
       </div>

@@ -389,7 +389,7 @@ async function launchFormWithOptions(page: Page, airdrop: string) {
   await connectOnForm(page);
   await fillCoin(page, "Party Favors", "PARTY");
   await toStep(page, "launch");
-  await page.getByLabel(/^First buy/).fill("0.1");
+  await page.getByLabel(/^Amount/).fill("0.1");
   await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
   await page.getByLabel("Wallets and amounts").fill(airdrop);
 }

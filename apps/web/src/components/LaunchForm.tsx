@@ -205,10 +205,12 @@ export function LaunchForm({
   const failed = step.kind === "failed" ? step : step.kind === "preparing" ? (step.retrying ?? null) : null;
 
   const launchable = quotes.filter((q) => q.launchable).length;
+  // A step is done once it has what it needs: the coin its three fields, the pair a launchable asset; the launch step
+  // is optional, so it is done once something on it was chosen and nothing on it is wrong; the review once prepared.
   const done: Record<StepId, boolean> = {
     coin: image !== null && name.trim() !== "" && symbol.trim() !== "",
     pair: Boolean(quote?.launchable),
-    launch: !options.problem,
+    launch: !options.problem && (options.rewardTax !== null || options.firstBuyText.trim() !== "" || [website, x, telegram].some((v) => v.trim() !== "")),
     review: review !== null,
   };
   const protection = copy.protectionSeconds !== null ? windowWords(copy.protectionSeconds) : null;
@@ -485,6 +487,13 @@ function Summary({
     };
   }, []);
 
+  // The review, a failure or an error appears at the card's foot: bring it into view, inside the card and on the page.
+  const outcome = useRef<HTMLDivElement>(null);
+  const outcomeKey = review ? "review" : failed ? "failed" : error ? "error" : null;
+  useEffect(() => {
+    if (outcomeKey) outcome.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [outcomeKey]);
+
   const cost = review ? `${(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL` : null;
   const firstBuy = options.firstBuyQuote;
   // Market cap once the first buy has landed: the price it leaves the curve at, times the fixed supply, in the Quote Asset.
@@ -606,7 +615,7 @@ function Summary({
             <li>Every payment to you on the public ledger</li>
           </ul>
 
-          <div className={styles.action}>
+          <div ref={outcome} className={styles.action}>
             {error && (
               <p className={styles.error} role="alert">
                 {error}

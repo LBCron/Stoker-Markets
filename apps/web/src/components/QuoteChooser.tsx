@@ -16,11 +16,12 @@ import styles from "./QuoteChooser.module.css";
 const WHOLE_FROM = 1_000n;
 const COMPACT_FROM = 1_000_000n;
 
-/** The name, unless it only repeats the ticker (common for memecoins). */
-const distinctName = (q: QuoteAsset) => (q.name && q.name.toLowerCase() !== q.symbol?.toLowerCase() ? q.name : null);
-
 /** The kind the chips name the asset by: its issuer for a stock, its category otherwise. */
 const kindOf = (q: QuoteAsset) => (q.issuer ? ISSUER_LABELS[q.issuer] : CATEGORY_LABELS[q.category]);
+
+/** The name, unless it only repeats the ticker (common for memecoins) or the kind ("Solana" under SOL). */
+const distinctName = (q: QuoteAsset) =>
+  q.name && q.name.toLowerCase() !== q.symbol?.toLowerCase() && q.name.toLowerCase() !== kindOf(q).toLowerCase() ? q.name : null;
 
 function graduationAmount(q: QuoteAsset) {
   if (!q.graduationTarget) return null;
@@ -117,7 +118,7 @@ export function QuoteChooser({ quotes, value, onChange }: { quotes: QuoteAsset[]
           )}
         </button>
       </div>
-      {open && <QuotePicker quotes={quotes} value={value} onChange={onChange} onClose={() => setOpen(false)} />}
+      <QuotePicker quotes={quotes} value={value} open={open} onChange={onChange} onClose={() => setOpen(false)} />
     </div>
   );
 }
@@ -126,9 +127,9 @@ export function QuoteChooser({ quotes, value, onChange }: { quotes: QuoteAsset[]
  * The full picker, a modal on the site's dialog primitive (a sheet on a phone): the search, the kinds as chips with
  * their counts (the same chips as the board and the assets page), and the assets as cards, one radio each, the deepest
  * markets first, in a region that scrolls on its own. An asset that can't be launched against stays in view with its
- * reason but can't be chosen. Choosing one closes the picker.
+ * reason but can't be chosen. Choosing one closes the picker; it stays mounted so the choice keeps its checked state.
  */
-function QuotePicker({ quotes, value, onChange, onClose }: { quotes: QuoteAsset[]; value: string | null; onChange: (mint: string) => void; onClose: () => void }) {
+function QuotePicker({ quotes, value, open, onChange, onClose }: { quotes: QuoteAsset[]; value: string | null; open: boolean; onChange: (mint: string) => void; onClose: () => void }) {
   const id = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const [query, setQuery] = useState("");
@@ -137,11 +138,13 @@ function QuotePicker({ quotes, value, onChange, onClose }: { quotes: QuoteAsset[
   const chips = useMemo(() => PAIRED_CHIPS.map((c) => ({ chip: c, count: quotes.filter((q) => inChip(q, c)).length })).filter((c) => c.count > 0), [quotes]);
   const matches = useMemo(() => searchQuotes(quotes.filter((q) => inChip(q, chip)), query), [quotes, chip, query]);
 
+  // The picker stays mounted and opens and closes as a modal, so a chosen card keeps its checked state in the form.
   useEffect(() => {
     const el = dialog.current;
-    if (!el || el.open) return;
-    el.showModal();
-  }, []);
+    if (!el) return;
+    if (open && !el.open) el.showModal();
+    if (!open && el.open) el.close();
+  }, [open]);
 
   return (
     <dialog ref={dialog} className={`dialog ${styles.picker}`} aria-labelledby={`${id}-title`} onClose={onClose} onCancel={(e) => { e.preventDefault(); onClose(); }}>

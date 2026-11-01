@@ -372,7 +372,7 @@
 .field input::placeholder,
 .field textarea::placeholder {
   color: var(--ink-3);
-  opacity: 0.8;
+  opacity: 0.88;
 }
 
 .counter {
@@ -800,7 +800,7 @@
   margin: 0;
   font-size: var(--text-caption);
   color: var(--on-tile);
-  opacity: 0.8;
+  opacity: 0.88;
 }
 
 .signingAmounts {
@@ -820,7 +820,7 @@
 }
 
 .signingAmounts dt {
-  opacity: 0.8;
+  opacity: 0.88;
 }
 
 .signingAmounts dd {

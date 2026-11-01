@@ -31,7 +31,7 @@ test("the form offers an airdrop only to a wallet the operator has allowed", asy
   await page.goto("/launch");
   await connectWallet(page);
   expect(await (await answered).json()).toEqual({ airdrop: false });
-  await expect(page.getByLabel(/^First buy/)).toBeVisible();
+  await expect(page.getByLabel(/^Amount/)).toBeVisible();
   await expect(airdropOption(page)).toHaveCount(0);
   expect(wallet.requests).toHaveLength(0);
 });
@@ -141,7 +141,7 @@ test("launch options explain what is wrong before anything is prepared", async (
 
   await page.getByRole("button", { name: "Review launch" }).click();
   await expect(formAlert(page)).toHaveText("The airdrop gives away more coins than your first buy gets. Buy more or airdrop less.");
-  await page.getByLabel(/^First buy/).fill("");
+  await page.getByLabel(/^Amount/).fill("");
   await page.getByRole("button", { name: "Review launch" }).click();
   await expect(formAlert(page)).toHaveText("An airdrop is paid from your first buy. Add a first buy.");
   expect(wallet.requests).toHaveLength(0);
