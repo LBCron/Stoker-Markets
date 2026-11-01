@@ -3,13 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
-import { explorerUrl, formatDuration, formatShare, formatUtc, isSol, quoteTicker } from "@/lib/format";
+import { explorerUrl, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
-import { Address } from "@/components/Address";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket, type CoinLink } from "@/components/CoinMarket";
-import { CopyButton } from "@/components/CopyButton";
 import { JsonLd } from "@/components/JsonLd";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
@@ -36,11 +34,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /**
  * A coin's page (#134, phase 3 of the rework): a breadcrumb, a one-line title row (the lockup at 40px, the pair, the
- * name with the coin's links, the three trust marks and the price with the day's change), the market (the chart with
+ * name with the explorer link, the three trust marks and the price with the day's change), the market (the chart with
  * the graduation bar and the activity under it, the trade panel docked beside it with the pair's other half and, under
- * those, the About block with the description, the launch's details and the addresses: owner, 2026-10-31, the facts
- * belong under the trade panel as the terminals place them), and below the grid only what some coins have: the Quote
- * Asset's labels, the rewards and a finished Airdrop.
+ * those, the About block with the description, the launch's details, the coin's links and the addresses: owner,
+ * 2026-10-31, the facts belong under the trade panel as the terminals place them), and below the grid only what some
+ * coins have: the Quote Asset's labels, the rewards and a finished Airdrop.
  */
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
@@ -56,147 +54,13 @@ export default async function CoinPage({ params, searchParams }: Props) {
   const rewards = launch.rewardTax ? await getCoinRewards(mint).catch(() => null) : null;
   // The Quote Asset's card wants its price and liquidity; its labels are shown for any asset but SOL (#11).
   const quoteAsset = await getQuoteAsset(launch.quote.mint).catch(() => null);
-  // An Airdrop still being paid sits under the title row, where its Creator sends it; a finished one joins the facts below.
-  const earns = creatorEarnings(platform);
-  const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
-  const protectionOpen = new Date(launch.protection.until).getTime() <= Date.now();
-  // The window's length as well as its end: a short window ends the minute the coin launched, which read as the same date twice (owner, 2026-10-31).
-  const protectionLength = formatDuration(new Date(launch.protection.until).getTime() - new Date(launch.createdAt).getTime());
+  // An Airdrop still being paid sits under the title row, where its Creator sends it (the market component draws it); a finished one joins the cards below.
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
   const origin = await siteOrigin();
-  const addresses: (readonly [label: string, value: string, kind: "address" | "tx"])[] = [
-    ["Creator", launch.creator, "address"],
-    ["Coin", launch.mint, "address"],
-    ["Curve", launch.pool, "address"],
-    ["Launch transaction", launch.createdSignature, "tx"],
-    ...(launch.graduation
-      ? ([["Raydium pool", launch.graduation.pool, "address"], ["Graduation transaction", launch.graduation.signature, "tx"]] as const)
-      : []),
-  ];
-  // The coin's own links and the explorer in the title row (#134); the aggregators, which know mainnet alone, under About (#41).
-  const links: CoinLink[] = [
-    { label: "Website", href: launch.links.website ?? "", external: true },
-    { label: "X", href: launch.links.x ?? "", external: true },
-    { label: "Telegram", href: launch.links.telegram ?? "", external: true },
-    { label: "Explorer", href: explorerUrl("address", launch.mint, platform), external: false },
-  ].filter((l) => l.href);
-  const elsewhere: [string, string][] = [
-    ["DEX Screener", `https://dexscreener.com/solana/${launch.mint}`],
-    ["Jupiter", `https://jup.ag/swap/${launch.quote.mint}-${launch.mint}`],
-  ];
-  const liquidity = launch.curve.status === "graduated"
-    ? "Locked in its Raydium pool since graduation; its price is not."
-    : launch.curve.status === "graduating"
-      ? "The curve sold out; Raydium is moving the coin to its pool."
-      : "On its bonding curve until the Graduation Target is raised; then locked in a Raydium pool.";
-
-  // The About card and the addresses, handed to the market component for the column under the trade panel.
-  const facts = (
-    <>
-      <div className={`card ${styles.aboutCard}`}>
-        <h2 id="about-title" className={`t-h3 ${styles.aboutTitle}`}>About {launch.symbol}</h2>
-        {launch.description && <p className={styles.description}>{launch.description}</p>}
-        <dl className={styles.facts}>
-          <div>
-            <dt>Launch type</dt>
-            <dd>{launch.rewardTax ? "Reward Launch" : "Standard coin"}</dd>
-          </div>
-          {launch.rewardTax && (
-            <div>
-              <dt>Reward tax</dt>
-              <dd>
-                {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.rewardTax.payout === "coin" ? launch.symbol : quote}
-                {launch.rewardTax.locked ? (
-                  <span>
-                    Fixed for good:{" "}
-                    <a href={explorerUrl("tx", launch.rewardTax.locked.signature, platform)} target="_blank" rel="noreferrer">
-                      authority given up
-                    </a>
-                  </span>
-                ) : (
-                  <span>Fixed: LaunchLab holds the tax authority until graduation</span>
-                )}
-              </dd>
-            </div>
-          )}
-          {trust && (
-            <div>
-              <dt>First Buy</dt>
-              <dd>{trust.creator.firstBuy ? `${formatShare(trust.creator.firstBuy.share)} of the supply, bought by the Creator at launch` : "None: the Creator bought nothing at launch"}</dd>
-            </div>
-          )}
-          <div>
-            <dt>Creator earns</dt>
-            <dd>
-              {earns.summary}
-              <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
-            </dd>
-          </div>
-          <div>
-            <dt>Liquidity</dt>
-            <dd>{liquidity}</dd>
-          </div>
-          <div>
-            <dt>Launched</dt>
-            <dd>
-              <time dateTime={launch.createdAt}>{formatUtc(launch.createdAt)}</time>
-            </dd>
-          </div>
-          {launch.graduation && (
-            <div>
-              <dt>Graduated</dt>
-              <dd>
-                <time dateTime={launch.graduation.graduatedAt}>{formatUtc(launch.graduation.graduatedAt)}</time>
-              </dd>
-            </div>
-          )}
-          <div>
-            <dt>Copy protection</dt>
-            {/* `data-until`: the suite sizes the time inside this sentence to the date's width for its mask. */}
-            <dd data-until>
-              {protectionLength} from launch
-              <span>
-                {protectionOpen ? "Ended " : "Until "}
-                <time dateTime={launch.protection.until}>{formatUtc(launch.protection.until)}</time>
-                {protectionOpen
-                  ? ". Anyone may use this coin's name, ticker and image again."
-                  : ": nobody else can launch a coin here with this name, ticker or image."}
-                {launch.copyOf && (
-                  <>
-                    {" "}
-                    {copyKind(launch.copyOf.kind)}{" "}
-                    <Link href={`/coin/${launch.copyOf.mint}`}>{launch.copyOf.name} ({launch.copyOf.symbol})</Link>, launched{" "}
-                    <time dateTime={launch.copyOf.launchedAt}>{formatUtc(launch.copyOf.launchedAt)}</time>
-                  </>
-                )}
-              </span>
-            </dd>
-          </div>
-          <div>
-            <dt>Elsewhere</dt>
-            <dd className={styles.elsewhere}>
-              {elsewhere.map(([label, href]) => (
-                <a key={label} href={href} className="chip" target="_blank" rel="noreferrer">{label}</a>
-              ))}
-            </dd>
-          </div>
-        </dl>
-      </div>
-
-      <dl className={`card ${styles.addresses}`} aria-label="Addresses">
-        {addresses.map(([label, value, kind]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>
-              <Address value={value} kind={kind} platform={platform} />
-              <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </>
-  );
+  // The explorer in the title row; the coin's own links (website, X, Telegram) are a fact of the About block, which the
+  // market component draws under the trade panel (owner, 2026-10-31).
+  const links: CoinLink[] = [{ label: "Explorer", href: explorerUrl("address", launch.mint, platform), external: false }];
 
   return (
     <article className={`shell ${styles.page}`}>
@@ -209,15 +73,16 @@ export default async function CoinPage({ params, searchParams }: Props) {
         </ol>
       </nav>
 
-      {/* The title row and the pair card are drawn by the market component from data: a server-rendered tree handed through the
-          client boundary as a prop warned about missing keys whenever one of its pieces streamed in late (2026-10-31). */}
+      {/* The title row, the pair card, the About block and the Airdrop card are all drawn by the market component from data:
+          a server-rendered tree handed through the client boundary as a prop warns about missing keys when the client
+          re-renders with it (2026-10-31: the pair card first, then the Airdrop card the moment a wallet connected). */}
       <CoinMarket
         initial={launch} platform={platform} quoteAsset={quoteAsset} links={links} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders}
-        initialTrust={trust} renderedAt={Date.now()} referrer={referrer} notice={!airdropDone && airdropCard} facts={facts}
+        initialTrust={trust} renderedAt={Date.now()} referrer={referrer} airdrop={airdropDone ? null : airdrop}
       />
 
       {(quoteAsset && !isSol(launch.quote)) || rewards || airdropDone ? (
-        <section className={`grid ${styles.about}`} aria-label="More about this coin">
+        <section className={`grid ${styles.more}`} aria-label="More about this coin">
 
           {quoteAsset && !isSol(launch.quote) && (
             <section className={`card ${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
@@ -231,14 +96,10 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </section>
           )}
           {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
-          {airdropDone && <div className={styles.wide}>{airdropCard}</div>}
+          {airdropDone && airdrop && <div className={styles.wide}><AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} /></div>}
         </section>
       ) : null}
     </article>
   );
 }
 
-/** How a coin took an earlier coin's identity, as the label's opening words. */
-function copyKind(kind: "ticker" | "name" | "image" | "near") {
-  return { ticker: "Its ticker is", name: "Its name is", image: "Its image is", near: "Its name or ticker is a near copy of" }[kind] + (kind === "near" ? "" : " that of");
-}

@@ -10,7 +10,11 @@ import {
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_CREATOR, REWARD_QUOTE } from "./seedData";
 
 export const SEEDED: LaunchFields[] = [
-  { name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port." },
+  // The traded coin carries a website and both socials, so the coin page's shots show where a coin's links go.
+  {
+    name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port.",
+    website: "https://example.com/harbor", x: "https://x.com/harborlights", telegram: "https://t.me/harborlights",
+  },
   { name: "Q", symbol: "Q" },
   { name: "Dollar Paired", symbol: "USDP", quote: "USDC", description: "Priced and traded in USDC, with its Graduation Target set in USDC." },
   { name: "Chipmaker Pair", symbol: "CHPX", quote: "NVDAx", description: "Paired with a tokenized stock." },

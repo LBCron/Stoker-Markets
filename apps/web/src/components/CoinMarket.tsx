@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { CandleInterval, CandleList, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { AirdropStatus, CandleInterval, CandleList, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
 import { getCandles, getHolders, getLaunch, getTrust, listTrades } from "@/lib/api";
 import { quoteTicker } from "@/lib/format";
+import { AirdropCard } from "./AirdropCard";
 import { Change } from "./Change";
+import { CoinFacts } from "./CoinFacts";
 import { CurveProgress } from "./CurveProgress";
 import { Holders } from "./Holders";
 import { PairLockup, QuoteCard } from "./PairCards";
@@ -51,12 +53,13 @@ const HOLDERS_REFRESH_MS = 12_000;
  * The live part of a coin page (#134, phase 3 of the rework): the title row with the price, the day's change and the
  * three trust marks (which open the "Before you buy" card), then the chart in eight columns with the graduation bar and
  * the trades and holders as tabs under it, and the trade panel docked in the other four with the pair's other half and
- * the coin's facts under it (owner, 2026-10-31: the About block sits under the trade panel, as the terminals place it),
+ * the coin's facts under it (owner, 2026-10-31: the About block sits under the trade panel, as the terminals place it;
+ * `CoinFacts` and an Airdrop still to send are drawn here from data for the same reason the title row is),
  * all kept up to date from the indexed trades and the chain. After Graduation the same page trades in the coin's
  * Raydium pool. On a phone the columns stack and a Buy / Sell bar at the foot brings the trade panel up.
  */
 export function CoinMarket({
-  initial, platform, quoteAsset, links, initialTrades, initialCandles, initialHolders, initialTrust, renderedAt, referrer = null, notice = null, facts = null,
+  initial, platform, quoteAsset, links, initialTrades, initialCandles, initialHolders, initialTrust, renderedAt, referrer = null, airdrop = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
@@ -64,10 +67,8 @@ export function CoinMarket({
   quoteAsset: QuoteAsset | null;
   /** The coin's own links and the explorer, after its name in the title row. */
   links: CoinLink[];
-  /** Something the page puts between the title row and the market: an Airdrop its Creator still has to send. */
-  notice?: ReactNode;
-  /** The coin's facts and addresses, rendered by the page, under the trade panel and the pair's other half. */
-  facts?: ReactNode;
+  /** An Airdrop its Creator still has to send, shown between the title row and the market; a paid one is the page's. */
+  airdrop?: AirdropStatus | null;
   /** From the page's `?ref=` link: the wallet that earns the referral share fee on the visitor's curve trades. */
   referrer?: string | null;
   initialTrades: Trade[];
@@ -188,7 +189,7 @@ export function CoinMarket({
         </p>
       </header>
 
-      {notice}
+      {airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />}
 
       <div className={`grid ${styles.market}`}>
         <div className={`col-8 ${styles.main}`}>
@@ -220,7 +221,9 @@ export function CoinMarket({
           <div className={styles.aside}>
             <QuoteCard launch={launch} quoteAsset={quoteAsset} />
           </div>
-          {facts && <div className={styles.facts}>{facts}</div>}
+          <div className={styles.facts}>
+            <CoinFacts launch={launch} platform={platform} trust={trust} renderedAt={renderedAt} />
+          </div>
         </div>
       </div>
 

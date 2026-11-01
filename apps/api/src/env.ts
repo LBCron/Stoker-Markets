@@ -28,6 +28,8 @@ export type Bindings = {
   PRICE_SOURCE: "jupiter" | "static";
   /** JSON object of USD prices by mint, for the static price source. */
   QUOTE_PRICES_USD?: string;
+  /** JSON object of logo URLs (or data URIs) by mint, for the static price source; a mint left out has no logo. */
+  QUOTE_LOGOS?: string;
   /**
    * The static price source's token list, for Quote Risk Labels (#11): JSON of `{ "<mint>": { "verified": bool,
    * "liquidityUsd": number } }`; a mint left out is unverified with unknown liquidity. Mainnet reads Jupiter's list.
@@ -398,7 +400,7 @@ export function solRoutes(env: Bindings, cfg: Config, connection: Connection): S
 
 export function quoteMarket(env: Bindings): QuoteMarket {
   if (env.PRICE_SOURCE === "jupiter") return jupiterMarket(env.JUPITER_API_KEY || undefined, env.JUPITER_API_URL || undefined);
-  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD ?? "", env.QUOTE_TOKEN_LIST);
+  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD ?? "", env.QUOTE_TOKEN_LIST, env.QUOTE_LOGOS);
   throw new Error(`unknown PRICE_SOURCE: ${env.PRICE_SOURCE}`);
 }
 

@@ -20,6 +20,9 @@ const MIN_MOVE = 1e-15;
  */
 const MAX_BAR_SPACING = 32;
 
+/** Up to this many candles the chart fits every new one into view; past it a trader's own scroll and zoom are left alone. */
+const FEW_CANDLES = 24;
+
 /** Chart colors come from the design tokens, read again whenever the color scheme changes. */
 function theme() {
   const css = getComputedStyle(document.documentElement);
@@ -29,7 +32,6 @@ function theme() {
     line: token("--line"),
     up: token("--up"),
     down: token("--down"),
-    accent: token("--accent"),
     crosshair: token("--ink-3"),
     font: token("--font-mono"),
   };
@@ -58,6 +60,7 @@ export function PriceChart({
   const series = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const byTime = useRef(new Map<number, Candle>());
   const drawnInterval = useRef<CandleInterval | null>(null);
+  const drawnCount = useRef(0);
   const [hovered, setHovered] = useState<Candle | null>(null);
 
   useEffect(() => {
@@ -90,11 +93,18 @@ export function PriceChart({
     const attrs = new MutationObserver(paint);
     attrs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-scheme", "data-theme"] });
     c.subscribeCrosshairMove((p) => setHovered(p.time === undefined ? null : (byTime.current.get(p.time as number) ?? null)));
+    // The first data effect can run before the box has its width (the chart sizes itself to it a moment later), and a
+    // fit made then leaves a lone candle at the default spacing: while there are few candles, every resize fits again.
+    const sized = new ResizeObserver(() => {
+      if (drawnCount.current > 0 && drawnCount.current <= FEW_CANDLES) c.timeScale().fitContent();
+    });
+    sized.observe(el);
     chart.current = c;
     series.current = s;
     return () => {
       scheme.removeEventListener("change", paint);
       attrs.disconnect();
+      sized.disconnect();
       c.remove();
       chart.current = null;
       series.current = null;
@@ -107,11 +117,12 @@ export function PriceChart({
     // TradingView's attribution logo stays with the drawn chart, not floating in an empty one.
     chart.current?.applyOptions({ layout: { attributionLogo: candles.length > 0 } });
     series.current?.setData(candles.map((k) => ({ time: k.time as UTCTimestamp, open: k.open, high: k.high, low: k.low, close: k.close })));
-    // A new interval opens on its latest candles; live updates of the same interval leave a trader's scroll and zoom alone.
-    if (drawnInterval.current !== data.interval) {
-      chart.current?.timeScale().fitContent();
-      drawnInterval.current = data.interval;
-    }
+    // A new interval opens on its latest candles, and so does each new candle while there are few (a page opened before
+    // the first trade draws it at the right size); live updates of a busy chart leave a trader's scroll and zoom alone.
+    const grown = candles.length !== drawnCount.current && candles.length <= FEW_CANDLES;
+    if (drawnInterval.current !== data.interval || grown) chart.current?.timeScale().fitContent();
+    drawnInterval.current = data.interval;
+    drawnCount.current = candles.length;
   }, [candles, data.interval]);
 
   const shown = hovered ?? candles.at(-1) ?? null;
