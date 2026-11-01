@@ -77,6 +77,13 @@ export async function chooseQuote(page: Page, ticker: string) {
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
 }
 
+/** The asset the form has chosen: checked among the recommended three, or named by the fourth cell when it came from the picker. */
+export async function expectChosen(page: Page, ticker: string) {
+  const recommended = page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
+  if ((await recommended.count()) > 0) await expect(recommended).toBeChecked();
+  else await expect(page.getByRole("button", { name: `${ticker} chosen. Choose another Quote Asset` })).toHaveAttribute("aria-pressed", "true");
+}
+
 /** The one action once the launch is reviewed: "Stoke TRCR for 0.0213 SOL", the exact cost from the simulation. */
 export const signButton = (page: Page) => review(page).getByRole("button", { name: /^Stoke \S+ for / });
 

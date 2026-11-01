@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
 import { QUOTES, coinImage, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
-import { chooseQuote, openPicker, signButton } from "./launchPage";
+import { chooseQuote, expectChosen, openPicker, signButton } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
@@ -28,7 +28,7 @@ async function fillCoin(page: Page, name: string, symbol: string) {
 
 async function choose(page: Page, ticker: string) {
   await chooseQuote(page, ticker);
-  await expect(card(page, ticker)).toBeChecked();
+  await expectChosen(page, ticker);
 }
 
 test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and shows unpriced ones without letting them be chosen", async ({ page }) => {
@@ -75,11 +75,11 @@ test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and sh
   await search(page).fill("");
   await expect(card(page, "SOL")).toBeChecked();
 
-  // Keyboard choice: a focused card takes Space, and the choice closes the picker; the chosen asset takes the fourth cell.
+  // Keyboard choice: a focused card takes Space, and the choice closes the picker and shows among the recommended three.
   await card(page, "USDC").focus();
   await page.keyboard.press("Space");
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
-  await expect(page.getByRole("button", { name: "USDC chosen. Choose another Quote Asset" })).toHaveAttribute("aria-pressed", "true");
+  await expectChosen(page, "USDC");
   await expect(terms(page)).toHaveText(
     "150 USDC raised, worth 1 SOL today, then moves to RaydiumThe amount is fixed from USDC's price when you launch.",
   );

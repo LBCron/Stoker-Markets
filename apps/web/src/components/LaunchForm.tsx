@@ -492,7 +492,7 @@ function Summary({
   const outcome = useRef<HTMLDivElement>(null);
   const outcomeKey = review ? "review" : failed ? "failed" : error ? "error" : null;
   useEffect(() => {
-    if (outcomeKey) outcome.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (outcomeKey) outcome.current?.scrollIntoView({ block: "nearest" });
   }, [outcomeKey]);
 
   const cost = review ? `${(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL` : null;

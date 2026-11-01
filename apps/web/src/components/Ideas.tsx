@@ -52,7 +52,7 @@ export function Ideas({ quotes }: { platform: PlatformInfo; quotes: QuoteAsset[]
         </div>
         <div className={`col-6 ${styles.visual}`}>
           <p className={styles.cut}>
-            <span className={`t-figure-xl heat-text ${styles.cutFigure}`}>Half</span>
+            <span className={`t-h1 heat-text ${styles.cutFigure}`}>Half</span>
             <span className={styles.cutLabel}>of what the platform collects on your coin, to you</span>
             <span className={`t-caption ${styles.cutNote}`}>on the curve and after graduation. <Link href="/fees" className={styles.cutLink}>Every fee, explained</Link></span>
           </p>
