@@ -224,28 +224,29 @@ export function LaunchForm({
 
   return (
     <form className={`shell grid ${styles.page}`} onSubmit={onSubmit} aria-busy={busy} data-step={current}>
+      <header className={`col-12 ${styles.head}`}>
+        <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
+        <p className={styles.lede}>
+          A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
+          its own Raydium pool at its target, and you earn half of what the platform collects on its trades.
+        </p>
+      </header>
+
+      {/* The step index: a row of its own across the grid, sticky under the header on every step, the list at the form's width. */}
+      <nav className={`col-12 grid ${styles.steps}`} aria-label="Steps">
+        <ol className={`col-8 ${styles.stepList}`}>
+          {STEPS.map((s, i) => (
+            <li key={s.id} className={styles.stepItem} data-done={done[s.id] || undefined}>
+              <button type="button" className={styles.stepButton} aria-current={current === s.id ? "step" : undefined} onClick={() => goTo(s.id)}>
+                <span className={styles.stepNumber} aria-hidden>{done[s.id] && current !== s.id ? <Tick /> : i + 1}</span>
+                <span className={styles.stepLabel}>{s.label}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
       <div className={`col-8 ${styles.main}`}>
-        <header className={styles.head}>
-          <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
-          <p className={styles.lede}>
-            A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
-            its own Raydium pool at its target, and you earn half of what the platform collects on its trades.
-          </p>
-        </header>
-
-        <nav className={styles.steps} aria-label="Steps">
-          <ol className={styles.stepList}>
-            {STEPS.map((s, i) => (
-              <li key={s.id} className={styles.stepItem} data-done={done[s.id] || undefined}>
-                <button type="button" className={styles.stepButton} aria-current={current === s.id ? "step" : undefined} onClick={() => goTo(s.id)}>
-                  <span className={styles.stepNumber} aria-hidden>{done[s.id] && current !== s.id ? <Tick /> : i + 1}</span>
-                  <span className={styles.stepLabel}>{s.label}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </nav>
-
         <fieldset className={`card ${styles.card}`} disabled={busy}>
           {/* 1. The coin: its image at the size the site shows it, the name and the ticker, each checked for a copy as it is typed. */}
           <section id="step-coin" className={styles.block} data-step="coin" aria-labelledby="block-coin" aria-busy={copy.pending}>

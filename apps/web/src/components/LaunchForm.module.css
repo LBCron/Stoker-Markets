@@ -35,24 +35,24 @@
   text-wrap: pretty;
 }
 
-/* The step index: four steps in one row, sticky under the header so the place in the form is always in view. */
+/* The step index: a row across the grid, sticky under the header, the list of four at the form's width on an opaque strip. */
 .steps {
   position: sticky;
-  top: calc(var(--header-h) + 8px);
+  top: var(--header-h);
   z-index: 2;
-  margin: 0 -4px;
-  padding: 4px;
-  border-radius: var(--radius-card);
-  background: var(--canvas);
+  margin: 0;
+  pointer-events: none;
 }
 
 .stepList {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  margin: 0;
-  padding: 0;
+  margin: 0 -4px;
+  padding: 8px 4px;
   list-style: none;
+  background: var(--bg);
+  pointer-events: auto;
 }
 
 .stepButton {
@@ -449,10 +449,10 @@
   padding-top: 4px;
 }
 
-/* The summary column: sticky beside the form, scrolling within its own height when the window is shorter than it. */
+/* The summary column: sticky beside the form, under the step index, scrolling within its own height when the window is shorter than it. */
 .side {
   position: sticky;
-  top: calc(var(--header-h) + 16px);
+  top: calc(var(--header-h) + 64px);
   min-width: 0;
 }
 
@@ -461,7 +461,7 @@
 }
 
 .summaryScroll {
-  max-height: calc(100dvh - var(--header-h) - 32px);
+  max-height: calc(100dvh - var(--header-h) - 80px);
   overflow-y: auto;
   scrollbar-width: thin;
   /* Room for the card's shadow and ring. */
@@ -897,14 +897,10 @@
 
 /* A phone: one step a screen, the index sticky under the header, the summary as the review step. */
 @media (max-width: 767px) {
-  .steps {
-    top: calc(var(--header-h) + 4px);
-    margin: 0;
-    padding: 4px 0;
-    border-radius: 0;
-  }
   .stepList {
     gap: 4px;
+    margin: 0;
+    padding: 6px 0;
   }
   .stepButton {
     gap: 6px;
