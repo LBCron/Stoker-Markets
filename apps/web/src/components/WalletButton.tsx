@@ -9,6 +9,7 @@ import { listLaunches } from "@/lib/api";
 import { shortAddress } from "@/lib/format";
 import { EMBEDDED_WALLET_NAME, SIGN_IN_PROVIDER, SOCIALS } from "@/lib/signIn";
 import { CopyButton } from "./CopyButton";
+import { ExportKey } from "./ExportKey";
 import { ProviderIcon } from "./ProviderIcon";
 import { SchemeToggle } from "./SchemeToggle";
 import { useSignIn } from "./SignIn";
@@ -57,6 +58,8 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [pending, setPending] = useState<WalletName | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const menu = useRef<HTMLDivElement>(null);
   const embedded = wallet?.adapter.name === EMBEDDED_WALLET_NAME;
   const closeSheet = useCallback(() => setSheet(false), []);
@@ -175,7 +178,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
                   </span>
                   <CopyButton value={address} label="Copy address" />
                 </div>
-                <p className={styles.embeddedNote}>Send SOL to this address from an exchange or another wallet to launch and trade. Made and held with {SIGN_IN_PROVIDER}; you can export its key.</p>
+                <p className={styles.embeddedNote}>Send SOL to this address from an exchange or another wallet to launch and trade. Made and held with {SIGN_IN_PROVIDER}; Export key gives you the key itself.</p>
               </div>
             )}
             {hasLaunched && (
@@ -184,9 +187,22 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
               </Link>
             )}
             {embedded && signIn.exportWallet && (
-              <button type="button" role="menuitem" onClick={() => { setOpen(false); void signIn.exportWallet?.(); }}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  setExportError(null);
+                  signIn.exportWallet?.().then(setSecret, (e: unknown) => setExportError(e instanceof Error ? e.message : String(e)));
+                }}
+              >
                 Export key
               </button>
+            )}
+            {exportError && (
+              <p className={styles.empty} role="alert">
+                {exportError}
+              </p>
             )}
             <button type="button" role="menuitem" onClick={() => void signOut()}>
               Sign out
@@ -194,6 +210,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
             {toggle}
           </div>
         )}
+        <ExportKey secret={secret} onClose={() => setSecret(null)} />
       </div>
     );
   }

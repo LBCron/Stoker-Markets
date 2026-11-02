@@ -4,7 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { fillForm, review, signButton } from "./launchPage";
-import { SIGN_IN_ACCOUNTS, SIGN_IN_CODE, STOKER_WALLET_NAME, TEST_WALLET_NAME, openSignIn, signInState } from "./wallet";
+import { SIGN_IN_ACCOUNTS, STAND_IN_SECRET, STOKER_WALLET_NAME, TEST_WALLET_NAME, openSignIn, signInState } from "./wallet";
 
 const headerSignIn = (page: Page) => page.getByRole("banner").getByRole("button", { name: "Sign in" });
 const connectedAs = (page: Page, name: string) => page.getByRole("banner").getByTitle(`Connected with ${name}`);
@@ -20,7 +20,7 @@ test("a Google sign-in gets a Stoker wallet that launches a coin, and signing ou
   ]);
   await expect(sheet.getByRole("textbox", { name: "Email" })).toBeVisible();
   await expect(sheet.getByRole("list", { name: "Wallets" }).getByRole("button")).toHaveText([TEST_WALLET_NAME]);
-  await expect(sheet).toContainText("made and held with Privy");
+  await expect(sheet).toContainText("made and held with Web3Auth");
   await sheet.getByRole("button", { name: "Continue with Google" }).click();
   await expect(sheet).toHaveCount(0);
 
@@ -34,7 +34,13 @@ test("a Google sign-in gets a Stoker wallet that launches a coin, and signing ou
   await expect(menu).toContainText(address);
   await expect(menu.getByText(/\d\.\d{4} SOL/)).toBeVisible();
   await expect(menu.getByRole("button", { name: "Copy address" })).toBeVisible();
+  // Export key shows the secret in the site's own dialog, once.
   await menu.getByRole("menuitem", { name: "Export key" }).click();
+  const exportDialog = page.getByRole("dialog", { name: /secret key/ });
+  await expect(exportDialog).toContainText(STAND_IN_SECRET);
+  await expect(exportDialog.getByRole("button", { name: "Copy secret key" })).toBeVisible();
+  await exportDialog.getByRole("button", { name: "Done" }).click();
+  await expect(exportDialog).toHaveCount(0);
   expect((await signInState(page)).exports).toBe(1);
   await expect(menu).toHaveCount(0);
 
@@ -62,20 +68,19 @@ test("a Google sign-in gets a Stoker wallet that launches a coin, and signing ou
   await expect(headerSignIn(page)).toBeVisible();
 });
 
-test("an email sign-in asks for the code, and a wrong code is told so", async ({ page, wallet }) => {
+test("an email sign-in goes through the provider's code page, and a bad address is told so", async ({ page, wallet }) => {
   await page.goto("/coins");
   const sheet = await openSignIn(page, headerSignIn(page));
-  await sheet.getByRole("textbox", { name: "Email" }).fill("ada@example.com");
-  await sheet.getByRole("button", { name: "Send code" }).click();
-  await expect(sheet).toContainText("We sent a code to ada@example.com");
-  const code = sheet.getByRole("textbox", { name: "Code from the email" });
-  await code.fill("000000");
-  await sheet.getByRole("button", { name: "Sign in" }).click();
-  await expect(sheet.getByRole("alert")).toHaveText("That code isn't right. Check the email and try again.");
-  await code.fill(SIGN_IN_CODE);
-  await sheet.getByRole("button", { name: "Sign in" }).click();
+  const email = sheet.getByRole("textbox", { name: "Email" });
+  await email.fill("ada@");
+  await sheet.getByRole("button", { name: "Continue with email" }).click();
+  await expect(sheet.getByRole("alert")).toHaveText("That doesn't look like an email address.");
+  await email.fill("ada@example.com");
+  await sheet.getByRole("button", { name: "Continue with email" }).click();
   await expect(sheet).toHaveCount(0);
-  expect((await signInState(page)).account).toEqual({ provider: "email", label: "ada@example.com", picture: null });
+  const state = await signInState(page);
+  expect(state.emails).toEqual(["ada@example.com"]);
+  expect(state.account).toEqual({ provider: "email", label: "ada@example.com", picture: null });
   await connectedAs(page, STOKER_WALLET_NAME).click();
   await expect(page.getByRole("menu", { name: `Connected with ${STOKER_WALLET_NAME}` })).toContainText("ada@example.com");
   expect(wallet.requests).toHaveLength(0);
@@ -89,7 +94,7 @@ test.describe("without a provider", () => {
     const sheet = await openSignIn(page, headerSignIn(page));
     await expect(sheet.getByRole("button", { name: /^Continue with/ })).toHaveCount(0);
     await expect(sheet.getByRole("textbox")).toHaveCount(0);
-    await expect(sheet).not.toContainText("Privy");
+    await expect(sheet).not.toContainText("Web3Auth");
     await expect(sheet.getByRole("list", { name: "Wallets" }).getByRole("button")).toHaveText([TEST_WALLET_NAME]);
     await page.keyboard.press("Escape");
     await expect(sheet).toHaveCount(0);

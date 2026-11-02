@@ -1,20 +1,25 @@
 /**
- * Sign in (owner, 2026-10-31 and 2026-11-02, #159, ADR 0016): one "Sign in" control opens one sheet that offers
- * Google, Apple, GitHub, X and email beside every Solana wallet in the browser. A social or email sign-in gets a
- * Solana wallet of its own, the Stoker wallet, made and held with Privy, the sign-in provider: its key is split
- * between Privy's enclave and the sign-in, and the user can export it. The wallet reaches the app through the Wallet
- * Standard like any other wallet, so the trade panel and the launch form stay what they are (ADR 0003).
+ * Sign in (owner, 2026-10-31 and 2026-11-02, #159, ADR 0016; the provider swapped on 2026-11-05): one "Sign in" control
+ * opens one sheet that offers Google, Apple, GitHub, X and email beside every Solana wallet in the browser. A social
+ * or email sign-in gets a Solana wallet of its own, the Stoker wallet, made and held with Web3Auth (MetaMask Embedded
+ * Wallets), the sign-in provider: its key is held as shares across Web3Auth's network and released by the sign-in,
+ * and the user can export it. The wallet reaches the app through the Wallet Standard like any other wallet, so the
+ * trade panel and the launch form stay what they are (ADR 0003).
  *
- * The provider is used only when an app id is set at build, and never on the server: `Providers` loads the Privy
- * bridge on the client alone. The UI suite stands the provider in through `window[SIGN_IN_STAND_IN]`, installed before
- * any app code as the test wallet is, so the sheet and the whole signed-in flow are tested without Privy.
+ * The provider is used only when a client id is set at build, and never on the server: `SignInProvider` loads the
+ * Web3Auth bridge on the client alone. The UI suite stands the provider in through `window[SIGN_IN_STAND_IN]`,
+ * installed before any app code as the test wallet is, so the sheet and the whole signed-in flow are tested without
+ * Web3Auth.
  */
 
-/** The Privy app id, set at build (`NEXT_PUBLIC_PRIVY_APP_ID`); without it the sheet offers wallets alone. */
-export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "";
+/** The Web3Auth client id, set at build (`NEXT_PUBLIC_WEB3AUTH_CLIENT_ID`); without it the sheet offers wallets alone. */
+export const WEB3AUTH_CLIENT_ID = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID ?? "";
+
+/** Web3Auth's network: Sapphire Mainnet unless the build names the devnet one for a throwaway project. */
+export const WEB3AUTH_NETWORK_NAME = process.env.NEXT_PUBLIC_WEB3AUTH_NETWORK === "sapphire_devnet" ? "sapphire_devnet" : "sapphire_mainnet";
 
 /** The sign-in provider, named where the custody words need it. */
-export const SIGN_IN_PROVIDER = "Privy";
+export const SIGN_IN_PROVIDER = "Web3Auth";
 
 /** The embedded wallet's name, as the wallet adapter and the signing panel see it. */
 export const EMBEDDED_WALLET_NAME = "Stoker wallet";

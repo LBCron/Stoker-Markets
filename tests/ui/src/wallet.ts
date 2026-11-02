@@ -6,8 +6,8 @@ import { Keypair, VersionedTransaction } from "@solana/web3.js";
 export const TEST_WALLET_NAME = "Test Wallet";
 /** The embedded wallet a social or email sign-in gets (apps/web/src/lib/signIn.ts), registered by the stand-in on a sign-in. */
 export const STOKER_WALLET_NAME = "Stoker wallet";
-/** The one code the stand-in's email sign-in accepts. */
-export const SIGN_IN_CODE = "123456";
+/** The secret key the stand-in's export shows (not the test wallet's real key, which stays in Node). */
+export const STAND_IN_SECRET = "StandInSecretKey1111111111111111111111111111111111111111111111111111111111111111111111";
 /** Who each social sign-in signs in as, in the stand-in: the label the account menu shows. */
 export const SIGN_IN_ACCOUNTS = { google: "Ada Lovelace", apple: "ada@icloud.example", github: "adalovelace", twitter: "@adalovelace" } as const;
 export type SocialProvider = keyof typeof SIGN_IN_ACCOUNTS;
@@ -36,7 +36,7 @@ export type SignInStandInState = {
   authenticated: boolean;
   account: { provider: string; label: string; picture: string | null } | null;
   embeddedAddress: string | null;
-  sentTo: string | null;
+  emails: string[];
   exports: number;
   logouts: number;
 };
@@ -47,7 +47,7 @@ type InitArgs = {
   address: string;
   publicKey: number[];
   /** The sign-in provider's stand-in (ADR 0016), or none: then the sheet offers the wallets alone. */
-  signIn: { key: string; walletName: string; icon: string; code: string; accounts: Record<string, string> } | null;
+  signIn: { key: string; walletName: string; icon: string; secret: string; accounts: Record<string, string> } | null;
 };
 
 /**
@@ -121,7 +121,7 @@ function install({ name, icon, address, publicKey, signIn }: InitArgs) {
 
   type Account = { provider: string; label: string; picture: string | null };
   const watchers = new Set<() => void>();
-  const state = { authenticated: false, account: null as Account | null, embeddedAddress: null as string | null, sentTo: null as string | null, exports: 0, logouts: 0 };
+  const state = { authenticated: false, account: null as Account | null, embeddedAddress: null as string | null, emails: [] as string[], exports: 0, logouts: 0 };
   const notify = () => watchers.forEach((w) => w());
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
   let registered = false;
@@ -154,15 +154,12 @@ function install({ name, icon, address, publicKey, signIn }: InitArgs) {
       await delay(120);
       signedIn({ provider, label: signIn.accounts[provider] ?? provider, picture: null });
     },
-    sendCode: async (email: string) => {
-      await delay(60);
+    // The provider sends the code and takes it on its own page; here that page is a short delay.
+    loginWithEmail: async (email: string) => {
+      await delay(120);
       if (!/^[^@\s]+@[^@\s]+$/.test(email)) throw new Error("That doesn't look like an email address.");
-      state.sentTo = email;
-    },
-    loginWithCode: async (code: string) => {
-      await delay(60);
-      if (code !== signIn.code) throw new Error("That code isn't right. Check the email and try again.");
-      signedIn({ provider: "email", label: state.sentTo ?? "", picture: null });
+      state.emails.push(email);
+      signedIn({ provider: "email", label: email, picture: null });
     },
     logout: async () => {
       state.authenticated = false;
@@ -174,6 +171,7 @@ function install({ name, icon, address, publicKey, signIn }: InitArgs) {
     },
     exportWallet: async () => {
       state.exports += 1;
+      return signIn.secret;
     },
     subscribe: (w: () => void) => {
       watchers.add(w);
@@ -261,7 +259,7 @@ export async function installTestWallet(page: Page, keypair: Keypair, { socialSi
     icon: ICON,
     address: keypair.publicKey.toBase58(),
     publicKey: Array.from(keypair.publicKey.toBytes()),
-    signIn: socialSignIn ? { key: SIGN_IN_KEY, walletName: STOKER_WALLET_NAME, icon: STOKER_ICON, code: SIGN_IN_CODE, accounts: SIGN_IN_ACCOUNTS } : null,
+    signIn: socialSignIn ? { key: SIGN_IN_KEY, walletName: STOKER_WALLET_NAME, icon: STOKER_ICON, secret: STAND_IN_SECRET, accounts: SIGN_IN_ACCOUNTS } : null,
   } satisfies InitArgs);
   return wallet;
 }

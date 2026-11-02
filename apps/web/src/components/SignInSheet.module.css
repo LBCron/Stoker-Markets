@@ -84,30 +84,10 @@
   color: var(--ink-2);
 }
 
-.sent {
-  margin: 0 0 8px;
-  color: var(--ink-2);
+.hint {
+  margin: 6px 0 0;
+  color: var(--ink-3);
   font-size: var(--text-caption);
-}
-
-.sent strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.textButton {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  cursor: pointer;
-}
-
-.textButton:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-  border-radius: var(--radius-control);
 }
 
 /* The divider between the sign-ins and the wallets: a hairline with the words on it. */

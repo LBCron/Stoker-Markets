@@ -4,7 +4,7 @@ import type { WalletName } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
 import dynamic from "next/dynamic";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { EMBEDDED_WALLET_NAME, PRIVY_APP_ID, SIGN_IN_STAND_IN, type SignInAccount, type SocialProvider } from "@/lib/signIn";
+import { EMBEDDED_WALLET_NAME, SIGN_IN_STAND_IN, WEB3AUTH_CLIENT_ID, type SignInAccount, type SocialProvider } from "@/lib/signIn";
 
 /**
  * What the sign-in provider gives the app (ADR 0016). `enabled` says whether social and email sign-in are offered at
@@ -18,11 +18,11 @@ export type SignInState = {
   /** The embedded wallet's address once it exists and is registered with the Wallet Standard. */
   embeddedAddress: string | null;
   loginWith: (provider: SocialProvider) => Promise<void>;
-  sendCode: (email: string) => Promise<void>;
-  loginWithCode: (code: string) => Promise<void>;
+  /** Signs in with an email: the provider sends the code and takes it on its own page, then the promise settles. */
+  loginWithEmail: (email: string) => Promise<void>;
   logout: () => Promise<void>;
-  /** Opens the provider's export of the embedded wallet's key (its own dialog; the one provider UI the site shows). */
-  exportWallet: (() => Promise<void>) | null;
+  /** The embedded wallet's secret key, base58 as Phantom and Solflare import it, for the site's own export dialog. */
+  exportWallet: (() => Promise<string>) | null;
 };
 
 const never = async () => {
@@ -36,8 +36,7 @@ const DISABLED: SignInState = {
   account: null,
   embeddedAddress: null,
   loginWith: never,
-  sendCode: never,
-  loginWithCode: never,
+  loginWithEmail: never,
   logout: async () => undefined,
   exportWallet: null,
 };
@@ -49,10 +48,10 @@ export function useSignIn() {
 }
 
 /** The bridge's contract: a leaf that publishes the provider's state up, so the provider's tree never wraps the app. */
-export type BridgeProps = { onState: (state: SignInState) => void };
+export type BridgeProps = { onState: (state: SignInState) => void; rpcUrl: string; cluster: string };
 
-/** The Privy bridge is client-only and loaded only when an app id is set, so no page pays for it without one. */
-const PrivyBridge = dynamic(() => import("./PrivySignIn").then((m) => m.PrivySignIn), { ssr: false });
+/** The Web3Auth bridge is client-only and loaded only when a client id is set, so no page pays for it without one. */
+const Web3AuthBridge = dynamic(() => import("./Web3AuthSignIn").then((m) => m.Web3AuthSignIn), { ssr: false });
 
 /** The suite's stand-in, if one was installed before the app loaded (tests/ui/src/wallet.ts). */
 type StandIn = Omit<SignInState, "enabled"> & { subscribe: (listener: () => void) => () => void };
@@ -74,8 +73,7 @@ function StandInBridge({ onState }: BridgeProps) {
         account: s.account,
         embeddedAddress: s.embeddedAddress,
         loginWith: s.loginWith,
-        sendCode: s.sendCode,
-        loginWithCode: s.loginWithCode,
+        loginWithEmail: s.loginWithEmail,
         logout: s.logout,
         exportWallet: s.exportWallet,
       });
@@ -105,18 +103,18 @@ function EmbeddedWalletConnector() {
 
 /**
  * Holds the sign-in state for the app. The bridge in use is decided once on the client: the suite's stand-in when one
- * is installed, else Privy when an app id was set at build, else nothing (the sheet offers wallets alone).
+ * is installed, else Web3Auth when a client id was set at build, else nothing (the sheet offers wallets alone).
  */
-export function SignInProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SignInState>(() => (PRIVY_APP_ID ? { ...DISABLED, enabled: true, ready: false } : DISABLED));
-  const [bridge, setBridge] = useState<"none" | "standIn" | "privy">(PRIVY_APP_ID ? "privy" : "none");
+export function SignInProvider({ rpcUrl, cluster, children }: { rpcUrl: string; cluster: string; children: ReactNode }) {
+  const [state, setState] = useState<SignInState>(() => (WEB3AUTH_CLIENT_ID ? { ...DISABLED, enabled: true, ready: false } : DISABLED));
+  const [bridge, setBridge] = useState<"none" | "standIn" | "web3auth">(WEB3AUTH_CLIENT_ID ? "web3auth" : "none");
   useEffect(() => {
     if (standIn()) setBridge("standIn");
   }, []);
   return (
     <SignInContext.Provider value={state}>
       {children}
-      {bridge === "standIn" ? <StandInBridge onState={setState} /> : bridge === "privy" ? <PrivyBridge onState={setState} /> : null}
+      {bridge === "standIn" ? <StandInBridge onState={setState} rpcUrl={rpcUrl} cluster={cluster} /> : bridge === "web3auth" ? <Web3AuthBridge onState={setState} rpcUrl={rpcUrl} cluster={cluster} /> : null}
       <EmbeddedWalletConnector />
     </SignInContext.Provider>
   );

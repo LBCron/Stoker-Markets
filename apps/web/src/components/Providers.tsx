@@ -15,11 +15,11 @@ function onWalletError(error: WalletError) {
  * Wallets are discovered through the Wallet Standard, so no wallet-specific adapters are bundled; the sign-in provider's
  * embedded wallet arrives the same way (ADR 0016), from the `SignInProvider` under the wallet provider.
  */
-export function Providers({ rpcUrl, children }: { rpcUrl: string; children: ReactNode }) {
+export function Providers({ rpcUrl, cluster, children }: { rpcUrl: string; cluster: string; children: ReactNode }) {
   return (
     <ConnectionProvider endpoint={rpcUrl} config={{ commitment: "confirmed" }}>
       <WalletProvider wallets={[]} autoConnect onError={onWalletError}>
-        <SignInProvider>
+        <SignInProvider rpcUrl={rpcUrl} cluster={cluster}>
           <RegionProvider>{children}</RegionProvider>
         </SignInProvider>
       </WalletProvider>

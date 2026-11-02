@@ -91,7 +91,7 @@ The Solana wallet a social or email sign-in gets, made and held with the Sign-in
 _Avoid_: Embedded wallet (in anything a user reads), Privy wallet
 
 **Sign-in Provider**:
-Privy, which authenticates a social or email sign-in and holds the Stoker Wallet's shares; wallet users never touch it.
+Web3Auth (part of MetaMask), which authenticates a social or email sign-in and holds the Stoker Wallet's shares; wallet users never touch it. Privy was built first and swapped out on 2026-11-05 for its $299-a-month cliff at 500 users (ADR 0016).
 
 ### Fees
 

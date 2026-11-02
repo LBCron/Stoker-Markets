@@ -16,7 +16,7 @@ const [TERMS, PRIVACY] = LEGAL_LINKS;
  * The one sheet behind every "Sign in" (owner, 2026-11-02; ADR 0016): the social sign-ins and email first, then the
  * Solana wallets in the browser, on the site's dialog primitive (a modal in the top layer, a sheet from the foot on a
  * phone). A wallet connects as before; a social or email sign-in gets the Stoker wallet, which the connector selects
- * once the provider has made it. Without a provider (no app id, no stand-in) the sheet offers the wallets alone, and
+ * once the provider has made it; an email sign-in's code is taken on the provider's own page. Without a provider (no app id, no stand-in) the sheet offers the wallets alone, and
  * the custody note goes with the sign-ins it describes. `foot` is the header's light-or-dark toggle, kept where the
  * menu this sheet replaced had it.
  */
@@ -29,8 +29,6 @@ export function SignInSheet({ open, onClose, onWallet, foot }: { open: boolean; 
   const [busy, setBusy] = useState<SocialProvider | "email" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const [code, setCode] = useState("");
 
   useEffect(() => {
     const d = dialog.current;
@@ -58,30 +56,15 @@ export function SignInSheet({ open, onClose, onWallet, foot }: { open: boolean; 
     }
   };
 
-  const sendCode = async (e: FormEvent) => {
+  // The provider sends the code and takes it on its own page (a popup), then the promise settles signed in.
+  const withEmail = async (e: FormEvent) => {
     e.preventDefault();
     const to = email.trim();
     if (!to) return;
     setError(null);
     setBusy("email");
     try {
-      await signIn.sendCode(to);
-      setSentTo(to);
-      setCode("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const withCode = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-    setError(null);
-    setBusy("email");
-    try {
-      await signIn.loginWithCode(code.trim());
+      await signIn.loginWithEmail(to);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -137,38 +120,25 @@ export function SignInSheet({ open, onClose, onWallet, foot }: { open: boolean; 
             ))}
           </ul>
 
-          {sentTo ? (
-            <form className={styles.email} onSubmit={withCode}>
-              <p className={styles.sent}>
-                We sent a code to <strong>{sentTo}</strong>.{" "}
-                <button type="button" className={styles.textButton} onClick={() => { setSentTo(null); setCode(""); setError(null); }}>
-                  Use another email
-                </button>
-              </p>
-              <div className={styles.row}>
-                <label className={`input ${styles.field}`}>
-                  <span className="visually-hidden">Code from the email</span>
-                  <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="Code" autoFocus />
-                </label>
-                <button type="submit" className="button button-primary" disabled={!code.trim() || busy !== null} aria-busy={busy === "email" || undefined}>
-                  {busy === "email" ? "Signing in…" : "Sign in"}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <form className={styles.email} onSubmit={sendCode}>
-              <div className={styles.row}>
-                <label className={`input ${styles.field}`}>
-                  <ProviderIcon provider="email" className={styles.mark} />
-                  <span className="visually-hidden">Email</span>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="Email" />
-                </label>
-                <button type="submit" className="button button-ghost" disabled={!providerReady || !email.trim() || busy !== null} aria-busy={busy === "email" || undefined}>
-                  {busy === "email" ? "Sending…" : "Send code"}
-                </button>
-              </div>
-            </form>
-          )}
+          <form className={styles.email} onSubmit={withEmail}>
+            <div className={styles.row}>
+              <label className={`input ${styles.field}`}>
+                <ProviderIcon provider="email" className={styles.mark} />
+                <span className="visually-hidden">Email</span>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="Email" />
+              </label>
+              <button
+                type="submit"
+                className="button button-ghost"
+                aria-label="Continue with email"
+                disabled={!providerReady || !email.trim() || busy !== null}
+                aria-busy={busy === "email" || undefined}
+              >
+                {busy === "email" ? "Check your email…" : "Continue"}
+              </button>
+            </div>
+            <p className={styles.hint}>We email you a code, and {SIGN_IN_PROVIDER}&apos;s page takes it.</p>
+          </form>
 
           <p className={styles.or} aria-hidden="true">
             <span>or a Solana wallet</span>
@@ -197,7 +167,7 @@ export function SignInSheet({ open, onClose, onWallet, foot }: { open: boolean; 
 
       <p className={styles.note}>
         {signIn.enabled
-          ? `A Google, Apple, GitHub, X or email sign-in gets a Solana wallet of its own, made and held with ${SIGN_IN_PROVIDER}: its key is split between ${SIGN_IN_PROVIDER}'s enclave and your sign-in, and you can export it any time. `
+          ? `A Google, Apple, GitHub, X or email sign-in gets a Solana wallet of its own, made and held with ${SIGN_IN_PROVIDER}: its key is held as shares that only your sign-in puts together, and you can export it any time. `
           : ""}
         Stoker never holds your funds or your keys.{" "}
         <a href={TERMS.href} target="_blank" rel="noreferrer">{TERMS.label}</a> · <a href={PRIVACY.href} target="_blank" rel="noreferrer">{PRIVACY.label}</a>
