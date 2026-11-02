@@ -2,13 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { acceptDisclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
-import { Ring } from "./Mark";
 import { WELCOME } from "@/lib/legal";
 import { LEGAL_LINKS } from "@/lib/site";
 import styles from "./Welcome.module.css";
-
-/** The ring's size in the cover panel, standing in until the owner picks the welcome's picture (the marketing folder's round). */
-const RING = 160;
 
 const [TERMS, PRIVACY, RISK] = LEGAL_LINKS;
 
@@ -53,10 +49,10 @@ export function Welcome() {
         if (e.target === e.currentTarget && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) accept();
       }}
     >
-      {/* The picture's slot: a 2:1 panel across the card's top. The chosen file replaces the ring as a plain `img` from `public`
-          (`<img src="/welcome.jpg" width={1248} height={624} alt="" />`), which the panel's styles and the phone sheet's `:has(img)` read. */}
+      {/* The picture: "Ember dawn" (owner's pick, 2026-11-02, from the marketing folder's round), a 2:1 panel across the card's
+          top, served from `public` at 2x so it stays sharp; the panel's styles crop any file to 2:1. */}
       <div className={styles.cover}>
-        <Ring size={RING} className={styles.ring} />
+        <img src="/welcome.jpg" width={1248} height={624} alt="" />
       </div>
       <h2 id="welcome-title" className={`t-h2 ${styles.title}`}>{WELCOME.title}</h2>
       {WELCOME.lines.map((line) => (
