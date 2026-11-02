@@ -24,10 +24,6 @@ export default async function BurnsPage() {
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Burn and Flywheel</h1>
       <p className={styles.lead}>{burns.rule}</p>
-      <p className={styles.note}>
-        Holding the Platform Token gives no right to this revenue, and no burn promises another: the{" "}
-        <Link href="/risk#platform-token">risk disclosure</Link> says what the Burn does and does not do.
-      </p>
 
       <section className={`card ${styles.card}`} aria-labelledby="budgets-title">
         <h2 id="budgets-title" className={`t-h3 ${styles.cardTitle}`}>Revenue and what it bought</h2>

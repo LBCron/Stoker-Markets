@@ -35,4 +35,3 @@ next-env.d.ts
 
 # Agent worktrees
 .claude/worktrees/
-.logs/

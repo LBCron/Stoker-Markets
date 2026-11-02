@@ -66,10 +66,6 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
           The platform&apos;s coin and the revenue behind it. Every fee the platform collects, every payment of a Creator&apos;s share, every buy
           and burn and every move to the treasury is a Solana transaction on the Ledger below, and every figure here is a sum of its entries.
         </p>
-        <p className={styles.muted}>
-          Holding {symbol} gives no right to this revenue, and no burn promises another: the <Link href="/risk#platform-token">risk disclosure</Link>{" "}
-          says what the Burn does and does not do.
-        </p>
       </header>
 
       <section className={styles.tiles} aria-label="Key figures">

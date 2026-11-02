@@ -7,9 +7,8 @@ export const metadata: Metadata = { title: "Risk disclosure", description: "What
 
 /**
  * The risk disclosure the footer's one bold sentence links to (#131; the facts are the site's own: the fee model of
- * ADR 0009, the curve rules, the Quote Asset labels, the Burn of ADR 0006 and the confirmed excluded regions; the Platform
- * Token section answers the owner's question of 2026-11-02 about a competitor's token disclaimer, in our own words). DRAFT:
- * the owner approves this text before the site opens.
+ * ADR 0009, the curve rules, the Quote Asset labels and the confirmed excluded regions). DRAFT: the owner approves
+ * this text before the site opens.
  */
 export default function RiskPage() {
   return (
@@ -30,9 +29,6 @@ export default function RiskPage() {
 
         <h2 className="t-h3">Fees</h2>
         <p>Every trade pays a fee to Raydium and to the platform, on the curve and after Graduation, and a coin&apos;s creator pays a Graduation Fee out of their earnings once it graduates. Every fee, who pays it and who receives it, with its figure read from the chain, is on the <Link href="/fees">Fees page</Link>, the one place the site shows a fee figure. Half of what the platform collects on a coin&apos;s trades is forwarded to its creator, and every payment is on the public Ledger. Fees are set on-chain and can only change with notice under <Link href="/announcements">Announcements</Link>.</p>
-
-        <h2 id="platform-token" className="t-h3">The Platform Token and the Burn</h2>
-        <p>STOKER, the Platform Token, is a coin like any launched here: holding it gives no right to the platform&apos;s revenue, to any payment or to a say in how the platform is run. The Burn spends a published share of the platform&apos;s own revenue, net of the creators&apos; half, to buy STOKER and the top graduated coins in their own pools and destroys what it buys, which can hold up or raise their prices compared with no Burn; the shares, every buy and every burn are on the <Link href="/burns">Burns page</Link> and the Ledger. The shares can change with notice under <Link href="/announcements">Announcements</Link>, and no past buy, on the Ledger or anywhere else, is a promise of a future one. The platform&apos;s wallets, the treasury among them, hold STOKER and the other coins that pool fees pay in, take their share of Reward Rounds as the <Link href="/rewards">rewards page</Link> says, and may buy or sell at any time.</p>
 
         <h2 className="t-h3">Technology</h2>
         <p>Stoker builds transactions for Raydium&apos;s programs on Solana and shows what the chain records; it never holds your funds or your keys. A signed transaction cannot be reversed. The programs, the Solana network, your wallet and the data providers the site reads from are outside Stoker&apos;s control and can fail, pause or change.</p>
