@@ -56,7 +56,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["GET /quotes", "GET /quotes/:mint"],
         text: (
           <>
-            The Quote Registry: every Quote Asset with its <C>category</C> and, for a tokenized stock, its <C>issuer</C> (from the mint&apos;s address and authorities and the token list&apos;s tags, never a name), its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, its <C>liquidityUsd</C> from the token list (null when the list doesn&apos;t know the mint; SOL comes first, then what can be launched against, the deepest markets first), and its Quote Risk Labels (<C>labels</C>: <C>kind</C>, <C>severity</C>, <C>title</C>, <C>detail</C>, <C>source</C>; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint&apos;s authorities and Token-2022 extensions and from the token list; they inform and never block.
+            The Quote Registry: every Quote Asset with its <C>category</C> and, for a tokenized stock, its <C>issuer</C> (from the mint&apos;s address and authorities and the token list&apos;s tags, never a name), its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, its <C>liquidityUsd</C> from the token list (null when the list doesn&apos;t know the mint; SOL comes first, then what can be launched against, the deepest markets first), and its Quote Risk Labels (<C>labels</C>: <C>kind</C>, <C>severity</C>, <C>title</C>, <C>detail</C>, <C>source</C>; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint&apos;s authorities and Token-2022 extensions and from the token list; they inform and never block. Its <C>market</C> is the market behind it as TradingView names it (<C>symbol</C>, <C>venue</C>, <C>ticker</C>: the stock or fund a tokenized stock tracks, from its issuer and ticker, or a coin&apos;s own market, from its mint; null when none is known), which the asset&apos;s page charts.
           </>
         ),
       },
@@ -68,12 +68,12 @@ export const SECTIONS: readonly Section[] = [
           </>
         ),
       },
-      { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C> and, for a tokenized stock, its <C>issuer</C>.</> },
+      { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C>, for a tokenized stock its <C>issuer</C>, how many <C>launches</C> it has and their <C>volume24h</C>.</> },
       {
         endpoint: "GET /launches/:mint",
         text: (
           <>
-            One Launch: curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, and <C>change24h</C>, the day&apos;s price change as a fraction, null until the first trade), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+            One Launch: curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
           </>
         ),
       },
@@ -81,6 +81,14 @@ export const SECTIONS: readonly Section[] = [
       {
         endpoint: ["GET /launches/:mint/trades", "GET /launches/:mint/candles?interval=", "GET /launches/:mint/holders"],
         text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,
+      },
+      {
+        endpoint: ["GET /launches/:mint/trust"],
+        text: (
+          <>
+            The coin&apos;s trust figures, computed from the indexed trades and launches on every request so anyone can recompute them (ADR 0013). <C>creator</C>: how many coins the Creator launched here and how many graduated, and their First Buy in the launch transaction. <C>snipers</C>, Bundle Radar: every wallet but the Creator that bought in the Snipe Window (<C>windowSlots</C>, the launch&apos;s slot and five after it deployed), largest buy first, each with the slot it landed in after the launch&apos;s, what it bought and what it holds by its trades since, and how many others paid exactly the same amount; the totals as shares of the supply, and how many wallets landed in the launch&apos;s own slot or matched another&apos;s amount. A label informs; none stops a trade.
+          </>
+        ),
       },
       {
         endpoint: "GET /launches/:mint/quote",

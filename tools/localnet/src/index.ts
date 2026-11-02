@@ -74,6 +74,30 @@ export const LOCAL_QUOTES = {
  * source: SOL, USDC, NVDAx and JTO verified with deep markets and tagged as Jupiter tags them; TAXQ listed but unverified
  * and thin; BULLWHALE listed only by its `meme` tag, unverified with no liquidity known, on purpose.
  */
+/**
+ * A mark for each priced local Quote Asset, as Jupiter gives mainnet's one: a disc in the asset's colour with its ticker,
+ * drawn as an SVG data URI so the test stack needs no network and every shot of a pair draws the same logo.
+ */
+export const LOCAL_QUOTE_LOGOS: Record<string, string> = Object.fromEntries(
+  (
+    [
+      ["So11111111111111111111111111111111111111112", "SOL", "#9945ff", "#14f195"],
+      [LOCAL_QUOTES.USDC.toBase58(), "USDC", "#2775ca", "#2775ca"],
+      [LOCAL_QUOTES.NVDAx.toBase58(), "NVDA", "#76b900", "#76b900"],
+      [LOCAL_QUOTES.JTO.toBase58(), "JTO", "#1f2937", "#1f2937"],
+      [LOCAL_QUOTES.TAXQ.toBase58(), "TAXQ", "#b45309", "#b45309"],
+    ] as const
+  ).map(([mint, text, from, to]) => {
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
+      `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs>` +
+      `<circle cx="32" cy="32" r="32" fill="url(#g)"/>` +
+      `<text x="32" y="38" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="${text.length > 3 ? 17 : 22}" font-weight="700" fill="#fff">${text}</text>` +
+      `</svg>`;
+    return [mint, `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`];
+  }),
+);
+
 export const LOCAL_QUOTE_TOKEN_LIST: Record<string, { verified: boolean; liquidityUsd: number | null; tags: string[] }> = {
   So11111111111111111111111111111111111111112: { verified: true, liquidityUsd: 2_500_000_000, tags: ["verified", "major"] },
   [LOCAL_QUOTES.USDC.toBase58()]: { verified: true, liquidityUsd: 900_000_000, tags: ["verified", "stable"] },

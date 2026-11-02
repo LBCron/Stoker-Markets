@@ -252,6 +252,14 @@
   vertical-align: text-bottom;
 }
 
+/* A card's state beside its name, not under it: the Holder rewards card's "Coming soon" until #113 is built. */
+.typeName > .typeTag {
+  display: inline-flex;
+  margin-left: 6px;
+  color: var(--ink-2);
+  vertical-align: text-bottom;
+}
+
 .typeHint {
   grid-column: 1 / -1;
   font-size: var(--text-caption);

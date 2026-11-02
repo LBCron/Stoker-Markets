@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import { getBurns, getHolders, getLaunch, getPlatform, getRevenue, listLedger, listQuotes } from "@/lib/api";
 import { StatsDashboard } from "@/components/StatsDashboard";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/revenue",
   title: "Stats",
   description: "The platform's coin and the revenue behind it: revenue annualized, what the Burn has bought back and burned, every burn on-chain, and the Ledger.",
-};
+});
 
 /** The Stats page: every read on its own, so one that is down leaves its figure out rather than failing the page. */
 export default async function StatsPage() {

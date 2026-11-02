@@ -12,6 +12,25 @@ export const SORT_LABELS: Record<LaunchSort, string> = {
 /** The sorts in the order the toolbar shows them. */
 export const SORT_ORDER: LaunchSort[] = ["market_cap", "new", "trending", "graduation"];
 
+/** The list named as the fact it is (#135): what the rows are ordered by, said in the board's status line. */
+export const SORT_FACTS: Record<LaunchSort, string> = {
+  market_cap: "by market cap",
+  new: "newest first",
+  trending: "by 24h volume",
+  graduation: "nearest Graduation first",
+};
+
+/**
+ * A price change for a table cell: the API's fraction as a signed percentage ("+12.3%", "-0.8%", "0.0%"), one decimal
+ * under a hundred and none above, so a column keeps one precision. Null where there is no trade to measure from.
+ */
+export function formatDelta(value: number | null) {
+  if (value === null) return null;
+  const pct = value * 100;
+  const text = `${Math.abs(pct) >= 100 ? Math.abs(pct).toFixed(0) : Math.abs(pct).toFixed(1)}%`;
+  return pct > 0 ? `+${text}` : pct < 0 ? `-${text}` : text;
+}
+
 export const CATEGORY_LABELS: Record<QuoteCategory, string> = {
   sol: "Solana",
   stablecoin: "Currencies",
