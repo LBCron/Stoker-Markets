@@ -117,9 +117,9 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
- * The first choice on the launch form: a standard coin, or a Reward Launch with its Payout Asset (the coin itself or the
- * Quote Asset), and then its Reward Tax. All of it is fixed at launch. `labelId` names the section's heading, which
- * the form renders above.
+ * The launch type on the launch form, after the coin's identity (phase 5, #136): a standard coin, or a Reward Launch with
+ * its Payout Asset (the coin itself or the Quote Asset), and then its Reward Tax, every card with a one-line title. All
+ * of it is fixed at launch. `labelId` names the section's heading, which the form renders above.
  */
 export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
   const coinLabel = coin || "the coin";
@@ -140,9 +140,7 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
         </label>
         <label className={styles.typeCard}>
           <input type="radio" name="launch-type" checked={reward && o.rewardPayout === "coin"} onChange={() => chooseReward("coin")} />
-          <span className={styles.typeName}>
-            Reward Launch <span>paid in {coinLabel}</span>
-          </span>{" "}
+          <span className={styles.typeName}>Reward Launch paid in {coinLabel}</span>{" "}
           <span className={styles.typeHint}>Every transfer withholds a Reward Tax, paid to holders in {coinLabel} itself.</span>
         </label>
         <label className={styles.typeCard}>
@@ -153,9 +151,7 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
             onChange={() => chooseReward("quote")}
             disabled={!quoteLabel}
           />
-          <span className={styles.typeName}>
-            Reward Launch <span>paid in {quoteLabel ?? "the Quote Asset"}</span>
-          </span>{" "}
+          <span className={styles.typeName}>Reward Launch paid in {quoteLabel ?? "the Quote Asset"}</span>{" "}
           <span className={styles.typeHint}>
             Every transfer withholds a Reward Tax, sold for {quoteLabel ?? "the Quote Asset"} and paid to holders in it.
           </span>
@@ -206,7 +202,7 @@ export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsStat
     <div className={styles.options}>
       <div className={styles.field}>
         <label htmlFor="first-buy">
-          First buy <em>optional</em>
+          Amount <em>optional</em>
         </label>
         <div className={`${styles.amount} ${o.firstBuyProblem ? styles.invalid : ""}`}>
           <input
@@ -232,7 +228,7 @@ export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsStat
               buy before you.
             </>
           ) : (
-            "Your own buy, made in the launch transaction itself, so nobody can buy before you."
+            "Paid in the launch transaction itself; the quote shows what it gets before anything is prepared."
           )}
         </p>
       </div>

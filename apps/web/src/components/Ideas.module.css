@@ -111,6 +111,12 @@
   max-width: 40ch;
 }
 
+.cutLink {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* The trust layer: four facts as small cards in two columns. */
 .facts {
   display: grid;

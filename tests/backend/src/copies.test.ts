@@ -70,13 +70,15 @@ describe("Copy Protection", () => {
     const copier = await fundedWallet();
     // Eight stripes, the first colour the brighter: a picture with enough edges to hash (a flat one is not compared).
     const picture = png([240, 80, 20], [20, 40, 200]);
-    const launched = await launch(original, { name: `Ember Fox ${tag}`, symbol: `EMB${tag.slice(0, 4)}`, image: image(picture), exact: true });
+    // The ticker ends in a letter that makes no claim affix with the "2" the check below appends: a tag ending in V made
+    // "...V2", which the core key strips as a version word, and the copy read as near instead of taken (1 run in 32).
+    const ticker = `EMB${tag.slice(0, 3)}X`;
+    const launched = await launch(original, { name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture), exact: true });
     await deliverWebhook([launched.signature]);
     const coin = await summary(launched.prepared.mint);
     expect(new Date(coin.protection.until).getTime() - new Date(coin.createdAt).getTime()).toBe(WINDOW_SECONDS * 1000);
     expect(coin.copyOf).toBeNull();
 
-    const ticker = `EMB${tag.slice(0, 4)}`;
     const protectedCoin = expect.objectContaining({ mint: coin.mint, symbol: ticker, name: `Ember Fox ${tag}`, protectedUntil: coin.protection.until });
     // The check endpoint, as the launch form asks: the same ticker in lower case, with a $ and with leetspeak are all taken.
     for (const copy of [ticker.toLowerCase(), `$${ticker}`, ticker.replace("E", "3").replace("B", "8")]) {

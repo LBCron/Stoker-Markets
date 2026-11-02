@@ -8,7 +8,7 @@ import {
   QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
-import { chooseQuote } from "./launchPage";
+import { chooseQuote, signButton, toStep } from "./launchPage";
 import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
@@ -70,8 +70,10 @@ async function snap(page: Page, name: string, mask = dynamic) {
   await expectHydrated(page);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
-  // A full-page capture of a scrolled page stitches the sticky header into the middle.
-  await page.evaluate(() => window.scrollTo(0, 0));
+  // A full-page capture of a scrolled page stitches the sticky header into the middle, and one taken while a scroll is
+  // still in flight catches a sticky column partway (the launch summary, 2026-11-02): back to the top, and held there.
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expect.poll(() => page.evaluate(() => window.scrollY), { message: "the page is not at the top" }).toBe(0);
   // After the scroll the pointer rests over whatever now sits where it last clicked; park it on the page's corner so no field shows a hover.
   await page.mouse.move(0, 0);
   await expect(page).toHaveScreenshot(name, { fullPage: true, mask: mask(page) });
@@ -304,29 +306,58 @@ test("coin not found", async ({ page }) => {
   await snap(page, "coin-not-found.png");
 });
 
+/**
+ * The wallet prompt sits in the summary, which on a phone is the review step (phase 5, #136): connecting goes there and
+ * comes back to the coin step. On a desktop every step is in view and the index only scrolls.
+ */
+async function connectOnForm(page: Page) {
+  await toStep(page, "review");
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await toStep(page, "coin");
+}
+
+async function fillCoin(page: Page, name: string, symbol: string, buffer = COIN_PNG) {
+  await toStep(page, "coin");
+  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer });
+  await page.getByLabel("Name").fill(name);
+  await page.getByLabel("Ticker").fill(symbol);
+}
+
+/** Reviews the launch from wherever the form is: the action is in the summary, the review step on a phone. */
+async function reviewLaunch(page: Page) {
+  await toStep(page, "review");
+  await page.getByRole("button", { name: "Review launch" }).click();
+  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
+}
+
 test("launch form, step by step", async ({ page, wallet }) => {
   await page.goto("/launch");
   await expect(page.getByRole("heading", { name: "Stoke a coin" })).toBeVisible();
   await snap(page, "launch-disconnected.png");
 
+  await toStep(page, "review");
   await openWalletMenu(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await snap(page, "launch-wallet-menu.png");
   await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
 
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
-  await page.getByLabel("Name").fill("Tracer Bullet");
-  await page.getByLabel("Ticker").fill("TRCR");
+  await fillCoin(page, "Tracer Bullet", "TRCR");
   await page.getByLabel("Description").fill("The first coin through the whole system: form, API, wallet, chain, indexer, board.");
+  await toStep(page, "launch");
   await page.getByLabel("Website").fill("https://example.com/tracer");
+  await toStep(page, "coin");
   await copyCheckSettled(page);
   await snap(page, "launch-filled.png");
 
   // The welcome recorded the acceptance for every test; a browser without the record meets the launch disclaimer instead.
   await forgetDisclaimer(page);
+  await toStep(page, "review");
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
+  // A viewport shot: the page behind the modal sits wherever the index's scroll to the sticky summary left it, so pin it.
+  await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page).toHaveScreenshot("launch-disclaimer.png", { mask: dynamic(page) });
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
@@ -336,24 +367,25 @@ test("launch form, step by step", async ({ page, wallet }) => {
   expect(wallet.requests).toHaveLength(0);
 });
 
-/** The copy check answers a moment after the fields are filled; a shot waits for its verdicts so it never catches "Checking". */
+/**
+ * The copy check answers a moment after the fields are filled; a shot waits for its verdicts so it never catches
+ * "Checking". The coin step may be hidden on a phone, so this reads the section's attributes, not its visibility.
+ */
 async function copyCheckSettled(page: Page) {
-  const card = page.getByRole("region", { name: "Copy check" });
-  await expect(card).toHaveAttribute("aria-busy", "false");
-  await expect(card.getByText("Checking")).toHaveCount(0);
+  const coin = page.locator('section[data-step="coin"]');
+  await expect(coin).toHaveAttribute("aria-busy", "false");
+  await expect(coin.getByText("Checking")).toHaveCount(0);
 }
 
 test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
-  await page.getByLabel("Name").fill("Chipmaker Pair");
-  await page.getByLabel("Ticker").fill("CHPX");
+  await connectOnForm(page);
+  await fillCoin(page, "Chipmaker Pair", "CHPX");
   await chooseQuote(page, "NVDAx");
   await copyCheckSettled(page);
   await snap(page, "launch-filled-stock.png");
 
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await reviewLaunch(page);
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("0.83333333 NVDAx");
   await snap(page, "launch-review-stock.png");
   expect(wallet.requests).toHaveLength(0);
@@ -363,12 +395,10 @@ const OPTION_WALLETS = [1, 2, 3].map((n) => fixedKeypair(`options wallet ${n}`).
 
 async function launchFormWithOptions(page: Page, airdrop: string) {
   await page.goto("/launch");
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
-  await page.getByLabel("Name").fill("Party Favors");
-  await page.getByLabel("Ticker").fill("PARTY");
-  await page.getByLabel(/^First buy/).fill("0.1");
+  await connectOnForm(page);
+  await fillCoin(page, "Party Favors", "PARTY");
+  await toStep(page, "launch");
+  await page.getByLabel(/^Amount/).fill("0.1");
   await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
   await page.getByLabel("Wallets and amounts").fill(airdrop);
 }
@@ -381,26 +411,24 @@ test("launch form with a first buy and an airdrop", async ({ page, wallet }) => 
   await copyCheckSettled(page);
   await snap(page, "launch-options.png");
 
-  await page.getByRole("button", { name: "Review launch" }).click();
-  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
+  await reviewLaunch(page);
   await snap(page, "launch-review-options.png");
   expect(wallet.requests).toHaveLength(0);
 });
 
 test("launch form as a Reward Launch paid in the Quote Asset, and its review", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
-  await page.getByLabel("Name").fill("Yield Desk");
-  await page.getByLabel("Ticker").fill("YLD");
+  await connectOnForm(page);
+  await fillCoin(page, "Yield Desk", "YLD");
+  await toStep(page, "launch");
   await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
   await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
   await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();
   await copyCheckSettled(page);
+  await page.mouse.move(0, 0);
   await snap(page, "launch-reward.png");
 
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await reviewLaunch(page);
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("It is sold for SOL in small slices and paid out in SOL.");
   await snap(page, "launch-review-reward.png");
   expect(wallet.requests).toHaveLength(0);
@@ -417,10 +445,9 @@ test("launch form with a mistake in the airdrop list", async ({ page, wallet }) 
 test("launch the network refused", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000`).join("\n"));
-  await page.getByRole("button", { name: "Review launch" }).click();
-  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
+  await reviewLaunch(page);
   await drain(wallet.keypair, 0.01);
-  await page.getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await expect(page.getByRole("region", { name: "Launch not confirmed" })).toBeVisible();
   await snap(page, "launch-failed.png");
 });
@@ -455,7 +482,7 @@ test("coin page of a Reward Launch paid in SOL, after a sale and a round", async
 
 test("header wallet menu when connected", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectOnForm(page);
   await page.goto("/");
   // The header's ghost is the avatar once connected; on a phone the tab bar's Account tab opens the sheet that holds it.
   const account = (await accountArea(page)).getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
@@ -491,7 +518,7 @@ test("stats page", async ({ page, stack }) => {
   await page.goto("/revenue");
   // The Platform Token has not launched on the seeded stack, so the page carries its name and the market's empty state.
   await expect(page.getByRole("heading", { level: 1, name: "STOKER" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet.");
+  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet");
   await expect(page.getByRole("region", { name: "Key figures" }).getByRole("term")).toHaveCount(4);
   await expect(page.getByRole("region", { name: "Run the numbers" }).getByRole("textbox")).toHaveCount(2);
   // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
@@ -505,12 +532,16 @@ test("stats page", async ({ page, stack }) => {
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
   // (7.959784 one run, 7.959779 another), in the summary and in the Ledger's sweep entries alike (the entry's amount
-  // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades.
+  // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades. The annualized figure
+  // divides by the days since the first collection, so a run that crosses midnight halves it (2026-11-02): the figure and
+  // the calculator that starts from it are masked.
   await snap(page, "revenue.png", (p) => [
     p.locator("time"),
     p.locator("a.mono"),
     p.locator('dl[aria-labelledby="swept-title"] dd'),
     p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
+    p.getByRole("region", { name: "Key figures" }).locator("dl > div").first().locator("dd"),
+    p.getByRole("region", { name: "Run the numbers" }),
   ]);
 });
 

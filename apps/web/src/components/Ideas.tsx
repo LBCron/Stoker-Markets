@@ -10,9 +10,9 @@ import styles from "./Ideas.module.css";
 const EXAMPLE_COIN = "STOKER";
 
 /**
- * One section per idea, each with its own visual (#133, after the research): the pair, the Creator's cut said in
- * words (the Fees page is the one place a fee figure is shown, owner 2026-10-30), and the trust layer. The text sits in six columns and the visual in six, sides alternating; on a phone the
- * text comes first. The count is live from the Quote Registry, never a constant.
+ * One section per idea, each with its own visual (#133, after the research): the pair, the Creator's cut, and the
+ * trust layer. The text sits in six columns and the visual in six, sides alternating; on a phone the text comes first.
+ * The cut is said as a share, never a rate: the Fees page is the one place a fee figure is shown (owner, 2026-10-30).
  */
 export function Ideas({ quotes }: { platform: PlatformInfo; quotes: QuoteAsset[] }) {
   const count = quotes.length.toLocaleString("en-US");
@@ -52,11 +52,9 @@ export function Ideas({ quotes }: { platform: PlatformInfo; quotes: QuoteAsset[]
         </div>
         <div className={`col-6 ${styles.visual}`}>
           <p className={styles.cut}>
-            <span className={`t-figure-xl heat-text ${styles.cutFigure}`}>Half</span>
-            <span className={styles.cutLabel}>of what the platform collects, to you</span>
-            <span className={`t-caption ${styles.cutNote}`}>
-              On the curve and after graduation, in the asset your coin trades in. <Link href="/fees">Every fee, explained</Link>
-            </span>
+            <span className={`t-h1 heat-text ${styles.cutFigure}`}>Half</span>
+            <span className={styles.cutLabel}>of what the platform collects on your coin, to you</span>
+            <span className={`t-caption ${styles.cutNote}`}>on the curve and after graduation. <Link href="/fees" className={styles.cutLink}>Every fee, explained</Link></span>
           </p>
         </div>
       </section>

@@ -1,14 +1,15 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import type { BurnsPage, HolderList, LaunchSummary, LedgerPage, PlatformInfo, QuoteAsset, Revenue, RevenueAsset } from "@launchpad/contract";
-import { explorerUrl, formatAmount, formatPriceCompact, formatUnits, formatUtc, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
+import { formatAmount, formatPriceCompact, formatUnits, formatUtc, formatUtcDay, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { formatSol } from "@/lib/landing";
 import { annualizedRevenue, AVERAGE_DAYS, cumulativeBurns, dailyBurns, dayRevenueSol, platformTokenBurns, solUsd } from "@/lib/stats";
 import { BuybackCalculator } from "./BuybackCalculator";
 import { BuybackChart } from "./BuybackChart";
 import { CopyButton } from "./CopyButton";
 import { LedgerList } from "./LedgerList";
-import { Ring } from "./Mark";
+import { Address } from "./Address";
+import { EmptyState } from "./EmptyState";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./StatsDashboard.module.css";
 
@@ -29,16 +30,6 @@ export type StatsData = {
   /** The Platform Token's own market, once it exists and the reads answered. */
   token: { launch: LaunchSummary; holders: HolderList | null } | null;
 };
-
-/** Nothing to show yet: the ring at size and one line, the terminal's empty state. */
-function Empty({ children, id }: { children: React.ReactNode; id?: string }) {
-  return (
-    <div className={`card card-raised ${styles.emptyCard}`} id={id}>
-      <Ring size={72} className={styles.ring} />
-      <p>{children}</p>
-    </div>
-  );
-}
 
 /**
  * The Stats page (owner, 2026-10-30, after the shape of pump.fun's coin page, in our words and from our data): the
@@ -178,7 +169,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
                     <td className={`mono ${styles.num} ${styles.wide}`}>{coins > 0 ? `${formatPriceCompact(spent / coins)} SOL` : "-"}</td>
                     <td className={`mono ${styles.num}`}>{day && day > 0 ? `${((spent / day) * 100).toLocaleString("en-US", { maximumFractionDigits: 1 })}%` : "-"}</td>
                     <td className={styles.wide}>
-                      <a className="mono" href={explorerUrl("tx", e.signature, platform)} target="_blank" rel="noreferrer">{shortAddress(e.signature)}</a>
+                      <Address value={e.signature} kind="tx" platform={platform} />
                     </td>
                   </tr>
                 );
@@ -226,7 +217,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
             </div>
           </dl>
         ) : (
-          <Empty>{symbol} has not launched yet. It launches as the first coin on this platform, fair, with no presale and no team allocation; its market shows here from its first trade.</Empty>
+          <EmptyState title={`${symbol} has not launched yet`}>It launches as the first coin on this platform, fair, with no presale and no team allocation; its market shows here from its first trade.</EmptyState>
         )}
       </section>
 
@@ -235,7 +226,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
         {!revenue ? (
           <p className={styles.muted}>Not available right now.</p>
         ) : revenue.totals.length === 0 ? (
-          <Empty>No revenue collected yet. The Fee Collector runs every hour, and each collection shows up here with its transaction.</Empty>
+          <EmptyState title="Revenue starts with the first trade">No revenue collected yet. The Fee Collector runs every hour, and each collection shows up here with its transaction.</EmptyState>
         ) : (
           <ul className={styles.totals}>
             {revenue.totals.map((t) => (
@@ -332,7 +323,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
                 <div>
                   <dt>Operations wallet</dt>
                   <dd>
-                    <a className="mono" href={explorerUrl("address", revenue.operationsWallet, platform)} target="_blank" rel="noreferrer">{shortAddress(revenue.operationsWallet)}</a>
+                    <Address value={revenue.operationsWallet} platform={platform} />
                     <CopyButton value={revenue.operationsWallet} label="Copy operations wallet address" />
                   </dd>
                 </div>
@@ -341,7 +332,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
                   <dd>
                     {revenue.treasury ? (
                       <>
-                        <a className="mono" href={explorerUrl("address", revenue.treasury, platform)} target="_blank" rel="noreferrer">{shortAddress(revenue.treasury)}</a>
+                        <Address value={revenue.treasury} platform={platform} />
                         <CopyButton value={revenue.treasury} label="Copy treasury address" />
                       </>
                     ) : (

@@ -163,6 +163,10 @@ app.post("/v1/launches/prepare", async (c) => {
       website: f.website ?? null,
       x: f.x ?? null,
       telegram: f.telegram ?? null,
+      discord: f.discord ?? null,
+      tiktok: f.tiktok ?? null,
+      instagram: f.instagram ?? null,
+      youtube: f.youtube ?? null,
       imageHash: hash,
     })
     .returning();

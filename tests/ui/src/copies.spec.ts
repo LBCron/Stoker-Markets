@@ -7,9 +7,12 @@ test("the launch form's copy check names the protected coin, and the coin page s
   // The form and the wallet come first: the stack's window is 45 seconds, and a cold `next dev` compile would eat it.
   await page.goto("/launch");
   await connectWallet(page);
-  const card = page.getByRole("region", { name: "Copy check" });
-  await expect(card.getByRole("listitem")).toHaveText([/Name.*Type one to check it/, /Ticker.*Type one to check it/, /Image.*Add one to check it/]);
-  await expect(card).toContainText("A launched coin's name, ticker and image are its own for a while");
+  // Before anything is typed there is no verdict anywhere (phase 5, #136: inline marks, no box of empty rows), and the
+  // section's hint carries the promise in general words until the API has said how long the window is.
+  const coin = page.getByRole("region", { name: "Your coin" });
+  const verdict = (field: "name" | "symbol" | "image") => coin.locator(`[data-field="${field}"]`);
+  await expect(coin.locator("[data-field]")).toHaveCount(0);
+  await expect(coin).toContainText("A launched coin's name, ticker and image are its own for a while");
   const creator = await fundedKeypair();
   const mint = await launchViaApi(creator, { name: "Ember Guild", symbol: "EMBER", description: "The original." });
 
@@ -17,17 +20,19 @@ test("the launch form's copy check names the protected coin, and the coin page s
   await page.getByLabel("Ticker").fill("3MBER");
   await page.getByLabel("Name").fill("Official Ember Guild");
   await page.locator('input[type="file"]').setInputFiles({ name: "copy.png", mimeType: "image/png", buffer: coinImage("EMBER") });
-  await expect(card.getByRole("listitem").nth(1)).toContainText("Taken by Ember Guild (EMBER) until");
-  await expect(card.getByRole("listitem").nth(0)).toContainText("Taken by Ember Guild (EMBER) until");
-  await expect(card.getByRole("listitem").nth(2)).toContainText("A copy of EMBER's image, protected until");
-  await expect(card).toContainText("nobody else can use your coin's name, ticker or image here for 45 seconds");
+  await expect(verdict("symbol")).toContainText("Taken by Ember Guild (EMBER) until");
+  await expect(verdict("name")).toContainText("Taken by Ember Guild (EMBER) until");
+  await expect(verdict("image")).toContainText("A copy of EMBER's image, protected until");
+  await expect(coin).toContainText("nobody else can use your coin's name, ticker or image here for 45 seconds");
   // One letter more on a ticker of five or more is a near copy (four-letter tickers have too many neighbours); a different coin is free.
   await page.getByLabel("Ticker").fill("EMBERS");
-  await expect(card.getByRole("listitem").nth(1)).toContainText("Too close to EMBER (Ember Guild)");
+  await expect(verdict("symbol")).toContainText("Too close to EMBER (Ember Guild)");
   await page.getByLabel("Ticker").fill("FORGE");
   await page.getByLabel("Name").fill("Forge Hand");
   await page.locator('input[type="file"]').setInputFiles({ name: "forge.png", mimeType: "image/png", buffer: coinImage("FORGE") });
-  await expect(card.getByRole("listitem")).toHaveText([/Name.*Free/, /Ticker.*Free/, /Image.*Not a copy of a protected coin's/]);
+  await expect(verdict("name")).toHaveText("Free");
+  await expect(verdict("symbol")).toHaveText("Free");
+  await expect(verdict("image")).toHaveText("Not a copy of a protected coin's");
 
   // The wallet connected is not the Creator, so the ticker stays taken for it; the coin page says for how long.
   expect(wallet.keypair.publicKey.equals(creator.publicKey)).toBe(false);

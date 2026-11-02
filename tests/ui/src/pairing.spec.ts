@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
 import { QUOTES, coinImage, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
-import { chooseQuote } from "./launchPage";
+import { chooseQuote, expectChosen, openPicker, signButton } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
@@ -28,13 +28,16 @@ async function fillCoin(page: Page, name: string, symbol: string) {
 
 async function choose(page: Page, ticker: string) {
   await chooseQuote(page, ticker);
-  await expect(card(page, ticker)).toBeChecked();
+  await expectChosen(page, ticker);
 }
 
 test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and shows unpriced ones without letting them be chosen", async ({ page }) => {
   await page.goto("/launch");
-  await expect(card(page, "SOL")).toBeChecked();
+  // The recommended three lead, SOL chosen; the full picker opens from the fourth cell (phase 5, #136).
+  await expect(page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: /^SOL\b/ })).toBeChecked();
   await expect(terms(page)).toHaveText("1 SOL raised, then moves to Raydium");
+  await openPicker(page);
+  await expect(card(page, "SOL")).toBeChecked();
 
   // SOL first, then what can be launched against, then the rest, each card with what a coin raises in it.
   await expect(cards(page)).toHaveCount(6);
@@ -72,10 +75,11 @@ test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and sh
   await search(page).fill("");
   await expect(card(page, "SOL")).toBeChecked();
 
-  // Keyboard choice: a focused card takes Space.
+  // Keyboard choice: a focused card takes Space, and the choice closes the picker and shows among the recommended three.
   await card(page, "USDC").focus();
   await page.keyboard.press("Space");
-  await expect(card(page, "USDC")).toBeChecked();
+  await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
+  await expectChosen(page, "USDC");
   await expect(terms(page)).toHaveText(
     "150 USDC raised, worth 1 SOL today, then moves to RaydiumThe amount is fixed from USDC's price when you launch.",
   );
@@ -97,7 +101,7 @@ test("a Creator launches a coin paired with a tokenized stock at the exact Gradu
   await expect(review(page)).toContainText("Launching CHIP paired with NVDAx. It graduates at 0.83333333 NVDAx raised.");
   expect(wallet.requests).toHaveLength(0);
 
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(/\/coin\/[1-9A-HJ-NP-Za-km-z]{32,44}$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CHIP paired with NVDAx/);
   await expect(page.getByText("0 of 0.8333 NVDAx raised")).toBeVisible();

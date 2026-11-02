@@ -2,7 +2,7 @@
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   COIN_PNG, drain, expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, runFeeCollector, sol, solBalance, test, tradeViaApi } from "./fixtures";
-import { acceptDisclaimer, COIN, connectWallet, disclaimer, fillForm, formAlert, review } from "./launchPage";
+import { COIN, acceptDisclaimer, connectWallet, disclaimer, fillForm, formAlert, review, signButton } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 test("a Creator launches a SOL-paired coin and finds it on the board and its coin page", async ({ page, wallet, stack }) => {
@@ -19,7 +19,7 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   expect(cost).toBeLessThan(0.1);
   expect(wallet.requests).toHaveLength(0);
 
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await page.waitForURL(/\/coin\/[1-9A-HJ-NP-Za-km-z]{32,44}$/);
   expect(wallet.requests).toHaveLength(1);
   expect(wallet.requests[0]!.message.staticAccountKeys[0]!.equals(wallet.keypair.publicKey)).toBe(true);
@@ -30,7 +30,7 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   await expect(page.getByText(COIN.name, { exact: true })).toBeVisible();
   await expect(page.getByText(COIN.description)).toBeVisible();
   // The coin's own links, within its article: the footer links to Stoker's X and Telegram under the same names.
-  for (const [label, href] of [["Website", COIN.website], ["X", COIN.x], ["Telegram", COIN.telegram]])
+  for (const [label, href] of [["Website", COIN.website], ["X", COIN.x], ["Telegram", COIN.telegram], ["Discord", COIN.discord]])
     await expect(page.getByRole("article").getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href!);
   const image = page.locator("article header img").first();
   await expect(image).toHaveJSProperty("complete", true);
@@ -50,7 +50,10 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   expect(launch!.metadataUri.startsWith(`${stack.turbo.url}/`)).toBe(true);
   await expect.poll(async () => (await page.request.get(launch!.metadataUri)).status(), { timeout: 30_000 }).toBe(200);
   const metadata = await (await page.request.get(launch!.metadataUri)).json();
-  expect(metadata).toMatchObject({ name: COIN.name, symbol: COIN.symbol, description: COIN.description });
+  expect(metadata).toMatchObject({
+    name: COIN.name, symbol: COIN.symbol, description: COIN.description,
+    extensions: { website: COIN.website, twitter: COIN.x, telegram: COIN.telegram, discord: COIN.discord },
+  });
   expect(metadata.image.startsWith(`${stack.turbo.url}/`)).toBe(true);
 
   // The board lists it, and its card leads back to the coin page.
@@ -104,7 +107,7 @@ test("declining in the wallet launches nothing and says so", async ({ page, wall
   await page.getByRole("button", { name: "Review launch" }).click();
 
   wallet.declineNext();
-  await review(page).getByRole("button", { name: "Sign and launch" }).click();
+  await signButton(page).click();
   await expect(formAlert(page)).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
   await expect(review(page)).toBeHidden();
   await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();

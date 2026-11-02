@@ -3,8 +3,10 @@
 import Link from "next/link";
 import type { LaunchSummary, LaunchTrust, PlatformInfo } from "@launchpad/contract";
 import { explorerUrl, formatDuration, formatShare, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { LINK_INFO, LINK_KINDS, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
 import { CopyButton } from "./CopyButton";
+import { LinkIcon } from "./LinkIcon";
 import styles from "./CoinFacts.module.css";
 
 /**
@@ -36,12 +38,8 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
       ? ([["Raydium pool", launch.graduation.pool, "address"], ["Graduation transaction", launch.graduation.signature, "tx"]] as const)
       : []),
   ];
-  // The coin's own links (website, X, Telegram), where a visitor looks for them and where a coin without any says so; the aggregators, which know mainnet alone, after them (#41).
-  const socials: { label: string; href: string; icon: string }[] = [
-    { label: "Website", href: launch.links.website ?? "", icon: SocialIcon.website },
-    { label: "X", href: launch.links.x ?? "", icon: SocialIcon.x },
-    { label: "Telegram", href: launch.links.telegram ?? "", icon: SocialIcon.telegram },
-  ].filter((s) => s.href);
+  // The coin's own links, the seven kinds of the contract in the form's order with each network's mark (owner, 2026-11-02), where a visitor looks for them and where a coin without any says so; the aggregators, which know mainnet alone, after them (#41).
+  const links = LINK_KINDS.map((k) => [k, launch.links[k]] as const).filter((l): l is readonly [LinkKind, string] => Boolean(l[1]));
   const elsewhere: [string, string][] = [
     ["DEX Screener", `https://dexscreener.com/solana/${launch.mint}`],
     ["Jupiter", `https://jup.ag/swap/${launch.quote.mint}-${launch.mint}`],
@@ -151,11 +149,11 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
           <div>
             <dt>Links</dt>
             <dd className={styles.elsewhere}>
-              {socials.length === 0 && <span>None given by the Creator.</span>}
-              {socials.map((s) => (
-                <a key={s.label} href={s.href} className={`chip ${styles.social}`} target="_blank" rel="noreferrer nofollow">
-                  <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d={s.icon} /></svg>
-                  {s.label}
+              {links.length === 0 && <span>None given by the Creator.</span>}
+              {links.map(([kind, href]) => (
+                <a key={kind} href={href} className={`chip ${styles.social}`} target="_blank" rel="noreferrer nofollow">
+                  <LinkIcon kind={kind} size={14} />
+                  {LINK_INFO[kind].label}
                 </a>
               ))}
             </dd>
@@ -185,13 +183,6 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
     </>
   );
 }
-
-/** The marks on the coin's own links: a globe, X's and Telegram's glyphs (the same two the site's header and footer draw). */
-const SocialIcon = {
-  website: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm7.9 9h-3.4a15.6 15.6 0 0 0-1.3-5.9A8 8 0 0 1 19.9 11ZM12 4c1 1.3 2.2 3.8 2.5 7h-5C9.8 7.8 11 5.3 12 4ZM4.1 13h3.4c.1 2.2.6 4.2 1.3 5.9A8 8 0 0 1 4.1 13Zm3.4-2H4.1a8 8 0 0 1 4.7-5.9A15.6 15.6 0 0 0 7.5 11ZM12 20c-1-1.3-2.2-3.8-2.5-7h5c-.3 3.2-1.5 5.7-2.5 7Zm3.2-1.1c.7-1.7 1.2-3.7 1.3-5.9h3.4a8 8 0 0 1-4.7 5.9Z",
-  x: "M18.9 2H22l-7.1 8.1L23 22h-6.6l-5.2-6.7L5.3 22H2.2l7.6-8.6L2 2h6.8l4.7 6.2L18.9 2Zm-1.1 18h1.7L7.3 3.9H5.5L17.8 20Z",
-  telegram: "M21.6 3.3 2.9 10.5c-1.1.4-1.1 1.1-.2 1.4l4.7 1.5 1.8 5.6c.2.6.1.8.7.8.5 0 .7-.2 1-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.8-1.1-1.8Zm-3.4 4.3-8.6 7.8-.3 3.2-1.5-4.7 10-6.3c.5-.3.9 0 .4.3v-.3Z",
-} as const;
 
 /** How a coin took an earlier coin's identity, as the label's opening words. */
 function copyKind(kind: "ticker" | "name" | "image" | "near") {
