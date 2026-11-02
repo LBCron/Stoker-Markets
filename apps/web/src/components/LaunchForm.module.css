@@ -309,6 +309,46 @@
   gap: 12px;
 }
 
+/* A link's well: the network's mark at its head in the hint's colour, the address after it. */
+.linkWell {
+  min-height: calc(1.55em + 22px);
+}
+
+.linkWell > input {
+  font: inherit;
+}
+
+.linkMark {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.linkWell:focus-within .linkMark {
+  color: var(--ink-2);
+}
+
+.moreLinks {
+  align-self: flex-start;
+  font-size: var(--text-caption);
+}
+
+/* The summary's links: the marks with their names, wrapping. */
+.linkRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.linkChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.linkChip svg {
+  color: var(--ink-3);
+}
+
 .field {
   position: relative;
   display: flex;
@@ -343,7 +383,8 @@
 @media (hover: hover) {
   .field > input:hover:not(:focus),
   .field > textarea:hover:not(:focus),
-  .checked:hover:not(:focus-within) {
+  .checked:hover:not(:focus-within),
+  .linkWell:hover:not(:focus-within) {
     border-color: var(--line-strong);
   }
 }
@@ -475,7 +516,7 @@
   position: absolute;
   inset: auto 4px 4px;
   height: 40px;
-  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  border-radius: calc(var(--radius-card) - 4px);
   background: linear-gradient(to bottom, transparent, var(--raised));
   pointer-events: none;
 }

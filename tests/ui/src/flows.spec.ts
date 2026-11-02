@@ -30,7 +30,7 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   await expect(page.getByText(COIN.name, { exact: true })).toBeVisible();
   await expect(page.getByText(COIN.description)).toBeVisible();
   // The coin's own links, within its article: the footer links to Stoker's X and Telegram under the same names.
-  for (const [label, href] of [["Website", COIN.website], ["X", COIN.x], ["Telegram", COIN.telegram]])
+  for (const [label, href] of [["Website", COIN.website], ["X", COIN.x], ["Telegram", COIN.telegram], ["Discord", COIN.discord]])
     await expect(page.getByRole("article").getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href!);
   const image = page.locator("article header img");
   await expect(image).toHaveJSProperty("complete", true);
@@ -50,7 +50,10 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   expect(launch!.metadataUri.startsWith(`${stack.turbo.url}/`)).toBe(true);
   await expect.poll(async () => (await page.request.get(launch!.metadataUri)).status(), { timeout: 30_000 }).toBe(200);
   const metadata = await (await page.request.get(launch!.metadataUri)).json();
-  expect(metadata).toMatchObject({ name: COIN.name, symbol: COIN.symbol, description: COIN.description });
+  expect(metadata).toMatchObject({
+    name: COIN.name, symbol: COIN.symbol, description: COIN.description,
+    extensions: { website: COIN.website, twitter: COIN.x, telegram: COIN.telegram, discord: COIN.discord },
+  });
   expect(metadata.image.startsWith(`${stack.turbo.url}/`)).toBe(true);
 
   // The board lists it, and its card leads back to the coin page.

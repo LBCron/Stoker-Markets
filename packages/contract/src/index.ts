@@ -21,6 +21,18 @@ export * from "./region";
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
 
+/**
+ * The links a coin can carry, in the order the launch form asks for them (owner, 2026-11-02: Telegram first, since coins
+ * with one graduated nine times as often; the three the form shows first, then the rest behind "More links"). Each is
+ * an optional https URL on the form, a column of the hosted metadata, a key of the Arweave document's extensions and a
+ * link on the coin page.
+ */
+export const LINK_KINDS = ["telegram", "x", "website", "discord", "tiktok", "instagram", "youtube"] as const;
+export type LinkKind = (typeof LINK_KINDS)[number];
+/** A coin's links as the API answers them: every kind, null where the Creator gave none. */
+export const LaunchLinks = z.object(Object.fromEntries(LINK_KINDS.map((k) => [k, z.string().nullable()])) as Record<LinkKind, z.ZodNullable<z.ZodString>>);
+export type LaunchLinks = z.infer<typeof LaunchLinks>;
+
 export const LAUNCH_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 export const LAUNCH_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
 
@@ -35,6 +47,10 @@ export const PrepareLaunchFields = z.object({
   website: optionalUrl,
   x: optionalUrl,
   telegram: optionalUrl,
+  discord: optionalUrl,
+  tiktok: optionalUrl,
+  instagram: optionalUrl,
+  youtube: optionalUrl,
 }).extend(LaunchModeFields.shape);
 export type PrepareLaunchFields = z.infer<typeof PrepareLaunchFields>;
 
@@ -107,7 +123,7 @@ export const LaunchSummary = z.object({
   metadataUri: z.string(),
   image: z.string().nullable(),
   description: z.string().nullable(),
-  links: z.object({ website: z.string().nullable(), x: z.string().nullable(), telegram: z.string().nullable() }),
+  links: LaunchLinks,
   /** Raw units of the Quote Asset, as a decimal string. */
   graduationTarget: z.string(),
   curve: CurveProgress,

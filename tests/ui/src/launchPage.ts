@@ -10,7 +10,9 @@ export const COIN = {
   website: "https://example.com/tracer",
   x: "https://x.com/tracer",
   telegram: "https://t.me/tracer",
+  discord: "https://discord.gg/tracer",
 };
+const MORE_LINK_LABELS = { discord: "Discord", tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" } as const;
 
 export async function connectWallet(page: Page) {
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
@@ -18,12 +20,18 @@ export async function connectWallet(page: Page) {
 }
 
 /** Fills the links on the launch step, by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words. */
-async function fillLinks(page: Page, coin: Partial<typeof COIN>) {
-  if (!coin.website && !coin.x && !coin.telegram) return;
+async function fillLinks(page: Page, coin: Partial<typeof COIN> & Partial<Record<keyof typeof MORE_LINK_LABELS, string>>) {
+  const more = (Object.keys(MORE_LINK_LABELS) as (keyof typeof MORE_LINK_LABELS)[]).filter((k) => coin[k]);
+  if (!coin.website && !coin.x && !coin.telegram && more.length === 0) return;
   await toStep(page, "launch");
   if (coin.telegram) await page.getByRole("textbox", { name: "Telegram" }).fill(coin.telegram);
   if (coin.x) await page.getByRole("textbox", { name: /^X\b/ }).fill(coin.x);
   if (coin.website) await page.getByLabel("Website").fill(coin.website);
+  if (more.length > 0) {
+    // The other four wait behind one button.
+    await page.getByRole("button", { name: /^More links/ }).click();
+    for (const k of more) await page.getByRole("textbox", { name: MORE_LINK_LABELS[k] }).fill(coin[k]!);
+  }
   await toStep(page, "coin");
 }
 

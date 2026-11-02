@@ -5,8 +5,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { and, asc, count, desc, eq, ilike, like, or, sql, type SQL } from "drizzle-orm";
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
-  LaunchListQuery, type Holder, type HolderKind, type HolderList, type LaunchList, type LaunchQuoteList, type LaunchSummary,
-  type MarketValue,
+  LaunchListQuery, LINK_KINDS, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
+  type LaunchSummary, type MarketValue,
 } from "@launchpad/contract";
 import { curves, graduations, launches, launchMarkets, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
 import { operationsKey, type AppEnv, type Config } from "../env";
@@ -136,7 +136,7 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
     metadataUri: l.metadataUri,
     image: m ? `${cfg.publicApiUrl}/metadata/${l.mint}/image` : null,
     description: m?.description ?? null,
-    links: { website: m?.website ?? null, x: m?.x ?? null, telegram: m?.telegram ?? null },
+    links: Object.fromEntries(LINK_KINDS.map((k) => [k, m?.[k] ?? null])) as LaunchLinks,
     graduationTarget: l.graduationTarget,
     curve: curveProgress(r.curve, r.graduation !== null),
     graduation: r.graduation && {

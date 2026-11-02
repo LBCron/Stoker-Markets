@@ -33,7 +33,15 @@ export function metadataDocument(m: Metadata, imageUrl: string) {
     description: m.description,
     image: imageUrl,
     external_url: m.website ?? undefined,
-    extensions: { website: m.website ?? undefined, twitter: m.x ?? undefined, telegram: m.telegram ?? undefined },
+    extensions: {
+      website: m.website ?? undefined,
+      twitter: m.x ?? undefined,
+      telegram: m.telegram ?? undefined,
+      discord: m.discord ?? undefined,
+      tiktok: m.tiktok ?? undefined,
+      instagram: m.instagram ?? undefined,
+      youtube: m.youtube ?? undefined,
+    },
   };
 }
 

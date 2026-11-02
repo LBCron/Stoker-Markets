@@ -81,6 +81,10 @@ export type LaunchFields = {
   website?: string;
   x?: string;
   telegram?: string;
+  discord?: string;
+  tiktok?: string;
+  instagram?: string;
+  youtube?: string;
   /** Raw units of the Quote Asset. */
   firstBuy?: string;
   airdrop?: { wallet: string; amount: string }[];

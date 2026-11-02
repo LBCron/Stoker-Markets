@@ -19,6 +19,10 @@ describe("launching a SOL-paired coin", () => {
       website: "https://example.com",
       x: "https://x.com/example",
       telegram: "https://t.me/example",
+      discord: "https://discord.gg/example",
+      tiktok: "https://tiktok.com/@example",
+      instagram: "https://instagram.com/example",
+      youtube: "https://youtube.com/@example",
       exact: true,
     });
 
@@ -52,7 +56,10 @@ describe("launching a SOL-paired coin", () => {
       name: "Tracer Bullet",
       symbol: "TRCR",
       description: "First Launch end to end",
-      links: { website: "https://example.com", x: "https://x.com/example", telegram: "https://t.me/example" },
+      links: {
+        website: "https://example.com", x: "https://x.com/example", telegram: "https://t.me/example", discord: "https://discord.gg/example",
+        tiktok: "https://tiktok.com/@example", instagram: "https://instagram.com/example", youtube: "https://youtube.com/@example",
+      },
       graduationTarget: env().platform.graduationTargetLamports,
       createdSignature: signature,
     });
@@ -62,7 +69,13 @@ describe("launching a SOL-paired coin", () => {
     expect(prepared.metadataUri.startsWith(`${env().turbo.url}/`)).toBe(true);
     await expect.poll(async () => (await fetch(prepared.metadataUri)).status, { timeout: 30_000 }).toBe(200);
     const metadata = (await (await fetch(prepared.metadataUri)).json()) as { image: string };
-    expect(metadata).toMatchObject({ name: "Tracer Bullet", symbol: "TRCR", description: "First Launch end to end" });
+    expect(metadata).toMatchObject({
+      name: "Tracer Bullet", symbol: "TRCR", description: "First Launch end to end", external_url: "https://example.com",
+      extensions: {
+        website: "https://example.com", twitter: "https://x.com/example", telegram: "https://t.me/example", discord: "https://discord.gg/example",
+        tiktok: "https://tiktok.com/@example", instagram: "https://instagram.com/example", youtube: "https://youtube.com/@example",
+      },
+    });
     expect(metadata.image.startsWith(`${env().turbo.url}/`)).toBe(true);
     await expect.poll(async () => (await fetch(metadata.image)).status, { timeout: 30_000 }).toBe(200);
     const image = await fetch(metadata.image);

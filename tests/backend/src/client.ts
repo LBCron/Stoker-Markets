@@ -34,6 +34,10 @@ export type LaunchForm = {
   website?: string;
   x?: string;
   telegram?: string;
+  discord?: string;
+  tiktok?: string;
+  instagram?: string;
+  youtube?: string;
   image?: { bytes: Uint8Array; type: string } | null;
   /** Quote Asset raw units. */
   firstBuy?: string;

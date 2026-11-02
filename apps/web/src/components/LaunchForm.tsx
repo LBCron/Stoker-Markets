@@ -13,10 +13,12 @@ import { landedError } from "@/lib/transactions";
 import { creatorShareOf, graduationFeeSol } from "@/lib/fees";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
+import { FIRST_LINKS, LINK_INFO, LINK_KINDS, MORE_LINKS, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
 import { useCopyCheck, windowWords, type CopyStatus } from "./CopyCheck";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
+import { LinkIcon } from "./LinkIcon";
 import { Ring } from "./Mark";
 import { PairMark } from "./PairMark";
 import { QuoteChooser } from "./QuoteChooser";
@@ -75,9 +77,8 @@ export function LaunchForm({
   const [name, setName] = useState(initialName);
   const [symbol, setSymbol] = useState(initialSymbol);
   const [description, setDescription] = useState("");
-  const [website, setWebsite] = useState("");
-  const [x, setX] = useState("");
-  const [telegram, setTelegram] = useState("");
+  const [links, setLinks] = useState<Record<LinkKind, string>>(() => Object.fromEntries(LINK_KINDS.map((k) => [k, ""])) as Record<LinkKind, string>);
+  const [moreLinks, setMoreLinks] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [quoteMint, setQuoteMint] = useState(
     () => quotes.find((q) => q.mint === initialQuote && q.launchable)?.mint ?? quotes.find((q) => q.launchable)?.mint ?? null,
@@ -134,7 +135,7 @@ export function LaunchForm({
       form.set("name", name.trim());
       form.set("symbol", symbol.trim());
       form.set("description", description.trim());
-      for (const [k, v] of [["website", website], ["x", x], ["telegram", telegram]] as const) if (v.trim()) form.set(k, v.trim());
+      for (const k of LINK_KINDS) if (links[k].trim()) form.set(k, links[k].trim());
       for (const [k, v] of options.fields()) form.set(k, v);
       form.set("image", image!);
       setStep({ kind: "reviewing", review: await toReview(await prepareLaunch(form), quote) });
@@ -210,7 +211,7 @@ export function LaunchForm({
   const done: Record<StepId, boolean> = {
     coin: image !== null && name.trim() !== "" && symbol.trim() !== "",
     pair: Boolean(quote?.launchable),
-    launch: !options.problem && (options.rewardTax !== null || options.firstBuyText.trim() !== "" || [website, x, telegram].some((v) => v.trim() !== "")),
+    launch: !options.problem && (options.rewardTax !== null || options.firstBuyText.trim() !== "" || LINK_KINDS.some((k) => links[k].trim() !== "")),
     review: review !== null,
   };
   const protection = copy.protectionSeconds !== null ? windowWords(copy.protectionSeconds) : null;
@@ -316,19 +317,22 @@ export function LaunchForm({
               hint="Coins with a Telegram graduated nine times as often as those without, in a study of 832,941 launches. Saved in the coin's permanent metadata and shown on its page."
             />
             <div className={styles.links}>
-              <div className={styles.field}>
-                <label htmlFor="coin-telegram">Telegram</label>
-                <input id="coin-telegram" type="url" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="https://t.me/" />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="coin-x">X</label>
-                <input id="coin-x" type="url" value={x} onChange={(e) => setX(e.target.value)} placeholder="https://x.com/" />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="coin-website">Website</label>
-                <input id="coin-website" type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
-              </div>
+              {FIRST_LINKS.map((k) => (
+                <LinkField key={k} kind={k} value={links[k]} onChange={(v) => setLinks((l) => ({ ...l, [k]: v }))} />
+              ))}
             </div>
+            {/* The rest wait behind one button, so the step stays short for the coin that has only a Telegram. */}
+            {moreLinks || MORE_LINKS.some((k) => links[k].trim() !== "") ? (
+              <div className={styles.links}>
+                {MORE_LINKS.map((k) => (
+                  <LinkField key={k} kind={k} value={links[k]} onChange={(v) => setLinks((l) => ({ ...l, [k]: v }))} />
+                ))}
+              </div>
+            ) : (
+              <button type="button" className={`button button-ghost ${styles.moreLinks}`} onClick={() => setMoreLinks(true)}>
+                More links: {MORE_LINKS.map((k) => LINK_INFO[k].label).join(", ")}
+              </button>
+            )}
           </section>
           <section className={styles.block} data-step="launch" aria-labelledby="block-options">
             <SectionHead id="block-options" title="First buy" optional hint="Your own buy inside the launch transaction itself, so nobody can buy before you; for allowed creators, an airdrop paid from it." />
@@ -347,6 +351,7 @@ export function LaunchForm({
           name={name}
           imageUrl={imageUrl}
           options={options}
+          links={links}
           review={review}
           step={step}
           failed={failed}
@@ -401,6 +406,20 @@ function StepNav({ back, next, onGo }: { back?: StepId; next: StepId; onGo: (id:
   );
 }
 
+/** One link's field: the network's mark at the head of the well, the address after it. */
+function LinkField({ kind, value, onChange }: { kind: LinkKind; value: string; onChange: (value: string) => void }) {
+  const info = LINK_INFO[kind];
+  return (
+    <div className={styles.field}>
+      <label htmlFor={`coin-${kind}`}>{info.label}</label>
+      <span className={`input ${styles.linkWell}`}>
+        <LinkIcon kind={kind} size={16} className={styles.linkMark} />
+        <input id={`coin-${kind}`} type="url" value={value} onChange={(e) => onChange(e.target.value)} placeholder={info.placeholder} />
+      </span>
+    </div>
+  );
+}
+
 /** A field with the copy check's mark at its end and the verdict under it once the field has a value. */
 function CheckedField({ id, label, status, text, field, children }: { id: string; label: string; status: CopyStatus; text: string | null; field: string; children: ReactNode }) {
   return (
@@ -447,6 +466,7 @@ type SummaryProps = {
   name: string;
   imageUrl: string | null;
   options: ReturnType<typeof useLaunchOptions>;
+  links: Record<LinkKind, string>;
   review: Review | null;
   step: Step;
   failed: Failed | null;
@@ -466,7 +486,7 @@ type SummaryProps = {
  * first buy gets, then the signing step, styled like nothing else on the page, and the status while the launch lands.
  */
 function Summary({
-  platform, quote, symbol, name, imageUrl, options, review, step, failed, error, connected, walletName, onEdit, onRetry, onSign, onBack,
+  platform, quote, symbol, name, imageUrl, options, links, review, step, failed, error, connected, walletName, onEdit, onRetry, onSign, onBack,
 }: SummaryProps) {
   const ticker = quote ? quoteTicker(quote) : null;
   const scroller = useRef<HTMLDivElement>(null);
@@ -571,6 +591,21 @@ function Summary({
                   </span>
                   <span className={styles.factNote}>
                     {supplyShare(BigInt(firstBuy.amountOut))} of the supply; market cap after it <span className="mono">{capAfter}</span> {ticker}
+                  </span>
+                </dd>
+              </div>
+            )}
+            {LINK_KINDS.some((k) => links[k].trim() !== "") && (
+              <div>
+                <dt>Links</dt>
+                <dd>
+                  <span className={styles.linkRow}>
+                    {LINK_KINDS.filter((k) => links[k].trim() !== "").map((k) => (
+                      <span key={k} className={styles.linkChip}>
+                        <LinkIcon kind={k} size={14} />
+                        {LINK_INFO[k].label}
+                      </span>
+                    ))}
                   </span>
                 </dd>
               </div>

@@ -162,6 +162,13 @@
       "when": 1793387021587,
       "tag": "0022_graduation_fee",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793596732327,
+      "tag": "0023_launch_links",
+      "breakpoints": true
     }
   ]
 }

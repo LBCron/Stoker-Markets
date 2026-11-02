@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, listTrades } from "@/lib/api";
 import { explorerUrl, formatUnits, formatUtc, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { LINK_INFO, LINK_KINDS, type LinkKind } from "@/lib/links";
 import { AirdropCard } from "@/components/AirdropCard";
+import { LinkIcon } from "@/components/LinkIcon";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
 import { PairLockup, PairStats, QuoteCard } from "@/components/PairCards";
@@ -57,11 +59,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
       ? ([["Raydium pool", launch.graduation.pool, "address"], ["Graduation transaction", launch.graduation.signature, "tx"]] as const)
       : []),
   ];
-  const links = [
-    ["Website", launch.links.website],
-    ["X", launch.links.x],
-    ["Telegram", launch.links.telegram],
-  ].filter((l): l is [string, string] => Boolean(l[1]));
+  const links = LINK_KINDS.map((k) => [k, launch.links[k]] as const).filter((l): l is readonly [LinkKind, string] => Boolean(l[1]));
 
   return (
     <article className={`shell ${styles.page}`}>
@@ -74,9 +72,12 @@ export default async function CoinPage({ params, searchParams }: Props) {
           <p className={styles.name}>{launch.name}</p>
           {links.length > 0 && (
             <ul className={styles.links}>
-              {links.map(([label, href]) => (
-                <li key={label}>
-                  <a href={href} className="chip" target="_blank" rel="noreferrer nofollow">{label}</a>
+              {links.map(([kind, href]) => (
+                <li key={kind}>
+                  <a href={href} className="chip" target="_blank" rel="noreferrer nofollow">
+                    <LinkIcon kind={kind} size={14} />
+                    {LINK_INFO[kind].label}
+                  </a>
                 </li>
               ))}
             </ul>

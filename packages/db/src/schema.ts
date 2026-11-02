@@ -87,6 +87,10 @@ export const launchMetadata = pgTable("launch_metadata", {
   website: text("website"),
   x: text("x"),
   telegram: text("telegram"),
+  discord: text("discord"),
+  tiktok: text("tiktok"),
+  instagram: text("instagram"),
+  youtube: text("youtube"),
   /** The image's perceptual hash (Copy Protection, #120), computed at prepare time; null when the picture can't be hashed. */
   imageHash: text("image_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
