@@ -176,7 +176,7 @@ Every coin's on-chain metadata URI is `ARWEAVE_GATEWAY_URL/<id>` (`https://arwea
 
 ## 9. The web Worker
 
-`NEXT_PUBLIC_API_URL=https://api.<domain>` at build time (`pnpm exec opennextjs-cloudflare build` in `apps/web`), then `pnpm exec opennextjs-cloudflare deploy --env production` (`env.production` in `apps/web/wrangler.jsonc`, with `<domain>` as its custom domain). Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
+`NEXT_PUBLIC_API_URL=https://api.<domain>` and `NEXT_PUBLIC_PRIVY_APP_ID=<the app id of section 14>` at build time (`pnpm exec opennextjs-cloudflare build` in `apps/web`), then `pnpm exec opennextjs-cloudflare deploy --env production` (`env.production` in `apps/web/wrangler.jsonc`, with `<domain>` as its custom domain). Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
 
 The web Worker renders pages on the server, and all of those requests reach the API from the Worker's own address, which the per-IP limit would count as one caller. Issue it an API key with a high limit (`POST /v1/operator/api-keys` with `name` and `rateLimitPerMinute`; 6000, the most a key can have, is 100 requests a second) and set it as the web Worker's secret `API_KEY` (`wrangler secret put API_KEY` in `apps/web`); it is only ever sent from the server. Requests made in a visitor's browser carry no key and count against the visitor's own IP.
 
@@ -260,3 +260,24 @@ Only the owner can create it, since the account's admin is a wallet that signs.
    The dashboard is where the fees are claimed (they sit in token accounts the Referral Program owns until claimed, one per asset); claiming is a wallet action, so it is the owner's too, and what is claimed goes to the treasury like any revenue (ADR 0004).
 
 Until the account exists the widget takes no fee and its line under the frame says nothing about one; the Fees page states the rate. The landing's hero stays the live rows (the swap was its hero for an hour on 2026-10-30, `?hero=swap` still shows it).
+
+## 14. Sign in through Privy (owner)
+
+"Sign in" (ADR 0016) offers Google, Apple, GitHub, X and email beside the wallets through Privy, whose app lives under the owner's account; without its app id in the build the sheet offers the wallets alone.
+Only the owner can create the app, since the dashboard is theirs.
+
+1. Open https://dashboard.privy.io, sign up with the business email, and create an app named `Stoker` (a web app).
+   The **App ID** on its Settings page is public and goes into the build; the app secret is never needed (the site calls no Privy API from a server) and is not created.
+2. Login methods: turn on **Email**, **Google**, **Apple**, **GitHub** and **Twitter** (the sheet calls it X), and leave **Wallet** off: wallet users connect through the site's own wallet adapter and never touch Privy.
+   Each social can start on Privy's shared OAuth credentials (the consent screen then names Privy); OAuth apps in Stoker's own name are a later step, and Apple's needs the Apple developer account.
+3. Embedded wallets: turn on **Solana** wallets.
+   The site's own configuration creates one for every sign-in that has no wallet and turns Privy's confirmation modals off (the site's review is the confirmation), so the dashboard's switches for those two are overridden either way.
+4. Allowed origins (Configuration, Domains): `http://localhost:3100`, `http://localhost:3101`, `https://devnet.stoker.markets` and `https://stoker.markets`, or the SDK refuses to initialise from a page on any other origin.
+5. Optional, recommended by Privy: require **MFA** (a passkey or an authenticator app) for embedded wallet actions, since account access is wallet access; and set the appearance's accent and logo, which the one Privy dialog the site shows (the key export) uses.
+6. Give the app id to the builds: `NEXT_PUBLIC_PRIVY_APP_ID=<app id>` beside `NEXT_PUBLIC_API_URL` on the devnet build (section 11) and the production build (section 9), and in `apps/web/.env.local` for the dev site on this Mac.
+   It is a public identifier, not a secret, and may be committed in a deploy script.
+7. Prove it on the dev site or the rehearsal: Sign in with Google; the header shows the account; its menu names the sign-in and shows the Stoker wallet's address at 0 SOL; send devnet SOL to that address; launch a coin; the signing panel reads "Signing with your Stoker wallet…" and the coin lands; Export key opens Privy's dialog; Sign out brings "Sign in" back and a reload stays signed out.
+   Privy's dashboard then lists the user, and its usage page the monthly active users (free to 500).
+
+Until the app exists the sheet shows the wallets alone; the UI suite never calls Privy (its stand-in signs with the test key), so the real sign-in is proven only this way.
+

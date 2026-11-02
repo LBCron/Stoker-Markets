@@ -80,6 +80,19 @@ _Avoid_: Holder Reward (paid from Reward Tax), distribution
 Letting a Creator choose any supported Quote Asset instead of only SOL.
 _Avoid_: Pair with anything, multi-quote
 
+### Signing in
+
+**Sign in**:
+The one control, where the site said "Connect wallet", and the one sheet it opens: Google, Apple, GitHub, X and email through the Sign-in Provider, then the Solana wallets in the browser (ADR 0016).
+_Avoid_: Connect wallet, log in
+
+**Stoker Wallet**:
+The Solana wallet a social or email sign-in gets, made and held with the Sign-in Provider, whose key is split between the provider's enclave and the sign-in and can be exported; it signs through the Wallet Standard like any wallet.
+_Avoid_: Embedded wallet (in anything a user reads), Privy wallet
+
+**Sign-in Provider**:
+Privy, which authenticates a social or email sign-in and holds the Stoker Wallet's shares; wallet users never touch it.
+
 ### Fees
 
 **Platform Fee**:
