@@ -52,13 +52,19 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await page.goto("/coins");
   await expect(sorts(page).getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();
   await expectBoard(page, { sort: "market_cap" });
+  // The list is named as the fact it is, with when it last updated (#135); the figures a trader scans for are in the row.
+  await expect(page.getByRole("status")).toHaveText(/^\d+ coins by market cap, updated \d+s ago$/);
+  const highRow = page.getByRole("list", { name: "Coins" }).locator(`a[href="/coin/${high}"]`);
+  await expect(highRow.locator("[data-label='24h']")).toHaveText(/^\+[\d.]+%$/);
+  await expect(highRow.locator("[data-label='Holders']")).toHaveText("1");
 
-  // Each sort shows the coins in the API's order for it, and the address says which sort it is.
-  for (const [label, sort] of [["Newest", "new"], ["24h volume", "trending"], ["Near graduation", "graduation"]] as const) {
+  // Each sort shows the coins in the API's order for it, the address says which sort it is, and the status line names it.
+  for (const [label, sort, fact] of [["Newest", "new", "newest first"], ["24h volume", "trending", "by 24h volume"], ["Near graduation", "graduation", "nearest Graduation first"]] as const) {
     await sorts(page).getByRole("button", { name: label }).click();
     await expect(page).toHaveURL(new RegExp(`/coins\\?sort=${sort}$`));
     await expect(sorts(page).getByRole("button", { name: label, pressed: true })).toBeVisible();
     await expectBoard(page, { sort });
+    await expect(page.getByRole("status")).toContainText(`coins ${fact}, updated`);
   }
   // By market cap, the coin bought with the most SOL leads its sibling.
   const byCap = await expected({ sort: "market_cap" });
@@ -70,9 +76,10 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await expectBoard(page, { sort: "graduation", category: "stablecoin" });
   await expect(cards(page).filter({ hasNotText: "/USDC" })).toHaveCount(0);
 
-  // The bar lists only what coins are paired with, after its kind: USDC after Currencies, NVDAx after xStocks.
+  // The bar lists only what coins are paired with, after its kind: USDC after Currencies, NVDAx after xStocks. An asset's
+  // chip carries the day's volume across its coins; the stock coin has not traded, so its chip says nothing of volume.
   await expect(railRow(page, "USDC")).toHaveAccessibleName(/^USDC \d+ coins? \$[\d.,]+[KMB]?$/);
-  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx \d+ coins? \$[\d.,]+[KMB]?$/);
+  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx \d+ coins?$/);
   await expect(paired(page).getByRole("button", { name: /^TAXQ/ })).toHaveCount(0);
 
   // One asset narrows the board to that pair, whatever kind was chosen.
@@ -199,7 +206,8 @@ test("the platform's icon is served where the PlatformConfig names it", async ({
   expect(icon.status()).toBe(200);
   expect(icon.headers()["content-type"]).toBe("image/png");
   await page.goto("/");
-  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.png");
+  // Among the icons the head names (#83: the favicon, the SVG and the PNG), the PNG is the one the PlatformConfig points at.
+  await expect(page.locator('link[rel="icon"][type="image/png"]')).toHaveAttribute("href", "/icon.png");
 });
 
 test("'/' and ⌘K from any page reach the board's search, the site's one search, which finds a coin", async ({ page }) => {
@@ -210,8 +218,12 @@ test("'/' and ⌘K from any page reach the board's search, the site's one search
   // The header has no search of its own (owner, 2026-10-31): ⌘K (Ctrl+K elsewhere) from another page opens the board
   // with its field focused and the hash it came by gone; the coin is found through the API's search.
   await expect(page.getByRole("banner").getByRole("button", { name: "Search", exact: true })).toHaveCount(0);
-  await page.keyboard.press("ControlOrMeta+k");
-  await expect(page).toHaveURL("/coins");
+  // The shortcut's listener arrives with hydration, which on a cold `next dev` load can land after the page shows: press
+  // until the board answers (one press on a hydrated page; a press before it is a keystroke nothing hears).
+  await expect.poll(async () => {
+    await page.keyboard.press("ControlOrMeta+k");
+    return new URL(page.url()).pathname;
+  }, { intervals: [500], timeout: 15_000 }).toBe("/coins");
   await expect(search(page)).toBeFocused();
   await search(page).fill("haystack");
   await expect(cards(page)).toHaveCount(1);

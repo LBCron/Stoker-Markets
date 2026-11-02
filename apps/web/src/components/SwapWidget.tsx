@@ -2,6 +2,7 @@
 
 import { useWallet, type WalletContextState } from "@solana/wallet-adapter-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { JUPITER_REFERRAL, JUPITER_REFERRAL_FEE_BPS } from "@/lib/jupiterReferral";
 import styles from "./SwapWidget.module.css";
 
 /**
@@ -18,8 +19,8 @@ const HEIGHT = 520;
  * The referral account the owner creates on referral.jup.ag and sets at build time, and the fee it takes (50 to 255
  * basis points, of which Jupiter keeps 20%); without the account no fee is charged and the swap is Jupiter's plain one.
  */
-const REFERRAL = process.env.NEXT_PUBLIC_JUPITER_REFERRAL ?? "";
-const REFERRAL_FEE_BPS = Math.min(255, Math.max(50, Number(process.env.NEXT_PUBLIC_JUPITER_REFERRAL_FEE_BPS ?? "50") || 50));
+const REFERRAL = JUPITER_REFERRAL;
+const REFERRAL_FEE_BPS = JUPITER_REFERRAL_FEE_BPS;
 
 /** The slice of the Plugin's surface this component touches (its full declaration is in the Plugin's repository). */
 type JupiterPlugin = {

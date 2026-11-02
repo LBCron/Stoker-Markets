@@ -1,6 +1,6 @@
 import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
-  HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
+  HolderList, LaunchTrust, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   Region, RegionGatesView, TradeQuote, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareTradeRequest,
@@ -65,8 +65,9 @@ export const BOARD_SIZE = 60;
 /** The board's sort and filters, as both the API and the page's URL take them. */
 export type BoardQuery = { sort: LaunchSort; category: QuoteCategory | null; issuer: QuoteIssuer | null; quote: string | null; q: string };
 
-export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; creator?: string; limit?: number } = {}, signal?: AbortSignal) {
+export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; creator?: string; limit?: number; offset?: number } = {}, signal?: AbortSignal) {
   const query = new URLSearchParams({ limit: String(q.limit ?? BOARD_SIZE) });
+  if (q.offset) query.set("offset", String(q.offset));
   for (const key of ["sort", "category", "issuer", "quote", "status", "creator", "q"] as const) {
     const value = q[key];
     if (value) query.set(key, value);
@@ -82,6 +83,10 @@ export async function listLaunchQuotes() {
 /** Top holders and the Creator's holding, read from the chain by the API. */
 export async function getHolders(mint: string) {
   return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/holders`, { cache: "no-store" }), HolderList);
+}
+
+export async function getTrust(mint: string) {
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/trust`, { cache: "no-store" }), LaunchTrust);
 }
 
 export async function getLaunch(mint: string): Promise<LaunchSummary | null> {

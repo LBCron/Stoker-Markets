@@ -34,9 +34,14 @@ const DIALOG_STYLES = ["screenshot.css", "dialog.css"].map((name) => fileURLToPa
 
 /**
  * A panel taller than the phone's viewport is captured while the page is scrolled, where the sticky site header would
- * sit over its top, wallet address and all; for such a shot the header scrolls away with the page.
+ * sit over its top, wallet address and all; for such a shot the header scrolls away with the page. The page's scroll
+ * padding, which keeps anything scrolled into view clear of that header, goes with it: Playwright scrolls a panel that
+ * fits the viewport into view and then captures the viewport alone, and with the padding kept a panel taller than the
+ * viewport less the padding lands with its top at the padding and its bottom off screen, blank in the shot
+ * (`trade-sol-quote.png` on the phone, 2026-10-27).
  */
-const unstickHeader = (page: Page) => page.addStyleTag({ content: "body > header { position: static !important; }" });
+const unstickHeader = (page: Page) =>
+  page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-top: 0 !important; }" });
 
 async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
@@ -140,7 +145,7 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
 });
 
 /**
- * A coin's page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and a shot of a
+ * A coin's page says the Copy Protection runs "Until" a time inside the stack's 45-second window and "Ended" after it, and a shot of a
  * young seeded coin can land either side of that line depending on the run's speed (the longest coin's light desktop
  * baseline flipped on 2026-10-29, First Light's on 2026-10-30), so a shot waits for the window to end; the label is
  * rendered on the server, so it takes a reload to change.
@@ -148,7 +153,7 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
 async function copyWindowEnded(page: Page) {
   await expect
     .poll(async () => {
-      if (await page.getByText("Copy protection ended").isVisible()) return true;
+      if (await page.getByText("Anyone may use this coin's name, ticker and image again.").isVisible()) return true;
       await page.reload();
       return false;
     }, { timeout: 60_000, intervals: [2_000] })
@@ -158,20 +163,20 @@ async function copyWindowEnded(page: Page) {
 test("coin page", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("First Light")}`);
   await copyWindowEnded(page);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await snap(page, "coin.png");
 });
 
 test("coin page with the longest name and ticker", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
   await copyWindowEnded(page);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await snap(page, "coin-longest.png");
 });
 
 test("coin page with trades", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-traded.png", tradedDynamic);
@@ -222,7 +227,7 @@ test("trade panel after the curve sold out, while Raydium moves the coin to its 
 
 test("coin page paired with USDC, after a buy", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(2);
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-usdc.png", tradedDynamic);
@@ -265,7 +270,7 @@ test("trade panel paying with SOL where there is no SOL route", async ({ page, w
 
 test("coin page after graduation", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Cap and Gown")}`);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await expect(page.getByText("Graduated to its Raydium pool")).toBeVisible();
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-graduated.png", tradedDynamic);
@@ -452,7 +457,7 @@ test("coin page with an airdrop to send, seen by its creator", async ({ page }) 
   await page.goto(`/coin/${await mintOf(AIRDROP_SENDING.name)}`);
   await connectFromSite(page);
   await expect(page.getByRole("region", { name: "Airdrop" }).getByRole("button", { name: "Send airdrop" })).toBeVisible();
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await snap(page, "coin-airdrop.png");
 });
 
@@ -462,7 +467,7 @@ test("coin page with a paid airdrop", async ({ page }) => {
   await expect(card).toContainText("3 of 3 paid");
   await card.getByText("Show the 3 wallets").click();
   await expect(card.getByRole("link", { name: "Paid" })).toHaveCount(3);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await snap(page, "coin-airdrop-paid.png");
 });
 
@@ -471,7 +476,7 @@ test("coin page of a Reward Launch paid in SOL, after a sale and a round", async
   const card = page.getByRole("region", { name: "Holder rewards" });
   await expect(card.getByRole("list", { name: "Reward Rounds" })).toContainText("Paid");
   await expect(card.getByRole("list", { name: "Reward Sales" }).getByRole("listitem")).toHaveCount(1);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await snap(page, "coin-rewards.png", tradedDynamic);
 });
 
