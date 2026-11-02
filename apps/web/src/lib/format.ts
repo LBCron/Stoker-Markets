@@ -18,6 +18,13 @@ export function isSol(quote: Pick<QuoteRef, "mint">) {
 export const COIN_DECIMALS = 6;
 export const COIN_SUPPLY = 1_000_000_000;
 
+/** A share of the supply (0 to 1) as a percentage: two decimals below 1%, one above, and "<0.01%" for a trace. */
+export function formatShare(share: number) {
+  const pct = share * 100;
+  if (pct > 0 && pct < 0.01) return "<0.01%";
+  return `${pct.toFixed(pct < 1 ? 2 : 1)}%`;
+}
+
 export function shortAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
@@ -71,6 +78,16 @@ export function formatUtc(iso: string) {
 /** A UTC calendar day (YYYY-MM-DD) as people write it: Sep 28, 2026. */
 export function formatUtcDay(day: string) {
   return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" });
+}
+
+/** A span of time in its largest whole unit, as people say it: 7 days, 3 hours, 45 seconds. */
+export function formatDuration(ms: number) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  const unit = (n: number, name: string) => `${n} ${name}${n === 1 ? "" : "s"}`;
+  if (s < 60) return unit(s, "second");
+  if (s < 3600) return unit(Math.round(s / 60), "minute");
+  if (s < 86_400) return unit(Math.round(s / 3600), "hour");
+  return unit(Math.round(s / 86_400), "day");
 }
 
 export function timeAgo(iso: string, now = Date.now()) {

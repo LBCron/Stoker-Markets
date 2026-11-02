@@ -28,6 +28,8 @@ export type Bindings = {
   PRICE_SOURCE: "jupiter" | "static";
   /** JSON object of USD prices by mint, for the static price source. */
   QUOTE_PRICES_USD?: string;
+  /** JSON object of logo URLs (or data URIs) by mint, for the static price source; a mint left out has no logo. */
+  QUOTE_LOGOS?: string;
   /**
    * The static price source's token list, for Quote Risk Labels (#11): JSON of `{ "<mint>": { "verified": bool,
    * "liquidityUsd": number } }`; a mint left out is unverified with unknown liquidity. Mainnet reads Jupiter's list.
@@ -63,6 +65,8 @@ export type Bindings = {
   POOL_BACKFILL_SECONDS: string;
   /** Copy Protection (#120, ADR 0012): for this long after a launch nobody else may launch a coin here with its name, ticker or image; seven days unless set. */
   COPY_PROTECTION_SECONDS?: string;
+  /** Bundle Radar (#41, ADR 0013): a buy in the launch's slot or this many after it is a snipe; 5 unless set (about two seconds). */
+  SNIPE_WINDOW_SLOTS?: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
   /**
@@ -176,6 +180,8 @@ export type Config = {
   graduationFeeLamports: bigint;
   /** Copy Protection's window after a launch, in seconds. */
   copyProtectionSeconds: number;
+  /** Bundle Radar's Snipe Window after a launch, in slots after the launch's own. */
+  snipeWindowSlots: number;
   rewardRulesLeadSeconds: number;
   burnShareBps: number;
   flywheelShareBps: number;
@@ -235,6 +241,8 @@ const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
 const GRADUATION_FEE_DEFAULT_LAMPORTS = 15_000_000n;
 /** Seven days: the owner's choice (2026-10-26), a setting so it can become 30. */
 export const COPY_PROTECTION_DEFAULT_SECONDS = 7 * 86_400;
+/** Five slots, about two seconds: a bot that watches the program for pool creations buys in the launch's slot or the next few. */
+export const SNIPE_WINDOW_DEFAULT_SLOTS = 5;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
 const QUOTE_RULE_WRITES_DEFAULT = 120;
@@ -336,6 +344,7 @@ export function config(env: Bindings): Config {
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
+    snipeWindowSlots: env.SNIPE_WINDOW_SLOTS ? slots(env.SNIPE_WINDOW_SLOTS, "SNIPE_WINDOW_SLOTS") : SNIPE_WINDOW_DEFAULT_SLOTS,
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     countryHeader: env.COUNTRY_HEADER ? env.COUNTRY_HEADER.toLowerCase() : null,
     helius: heliusConfig(env),
@@ -402,7 +411,7 @@ export function solRoutes(env: Bindings, cfg: Config, connection: Connection): S
 
 export function quoteMarket(env: Bindings): QuoteMarket {
   if (env.PRICE_SOURCE === "jupiter") return jupiterMarket(env.JUPITER_API_KEY || undefined, env.JUPITER_API_URL || undefined);
-  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD ?? "", env.QUOTE_TOKEN_LIST);
+  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD ?? "", env.QUOTE_TOKEN_LIST, env.QUOTE_LOGOS);
   throw new Error(`unknown PRICE_SOURCE: ${env.PRICE_SOURCE}`);
 }
 
@@ -415,6 +424,12 @@ function perMinute(raw: string | undefined, name: string, fallback: number) {
   if (raw === undefined || raw === "") return fallback;
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) throw new Error(`${name} must be a whole number of requests above zero (got ${raw})`);
+  return n;
+}
+
+function slots(raw: string, name: string) {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${name} must be a whole number of slots (got ${raw})`);
   return n;
 }
 

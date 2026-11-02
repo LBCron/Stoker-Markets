@@ -69,9 +69,10 @@ export interface QuoteMarket {
 
 /**
  * A fixed table of USD prices by mint (JSON), for chains with no market: the local chain and devnet. The token list is
- * a fixed table too (`{ "<mint>": { "verified": true, "liquidityUsd": 5000000, "tags": ["defi"] } }`).
+ * a fixed table too (`{ "<mint>": { "verified": true, "liquidityUsd": 5000000, "tags": ["defi"] } }`), and so are the
+ * logos (`{ "<mint>": "<url or data URI>" }`), so a local Quote Asset shows its mark where mainnet's shows Jupiter's.
  */
-export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMarket {
+export function staticMarket(pricesJson: string, tokenListJson = "{}", logosJson = "{}"): QuoteMarket {
   const table = new Map<string, Decimal>();
   for (const [mint, price] of Object.entries(JSON.parse(pricesJson || "{}") as Record<string, string>)) {
     const d = parseDecimal(price);
@@ -87,9 +88,14 @@ export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMar
       throw new Error(`QUOTE_TOKEN_LIST: ${mint} has tags that are not a list of strings`);
     listings.set(mint, { verified: entry.verified === true, liquidityUsd: entry.liquidityUsd ?? null, tags: entry.tags ?? [] });
   }
+  const logos = new Map<string, string>();
+  for (const [mint, url] of Object.entries(JSON.parse(logosJson || "{}") as Record<string, unknown>)) {
+    if (typeof url !== "string" || !url) throw new Error(`QUOTE_LOGOS: ${mint} has an invalid logo`);
+    logos.set(mint, url);
+  }
   return {
     usdPrices: async (mints) => new Map(mints.flatMap((m) => (table.has(m) ? [[m, table.get(m)!] as const] : []))),
-    logos: async () => new Map(),
+    logos: async (mints) => new Map(mints.flatMap((m) => (logos.has(m) ? [[m, logos.get(m)!] as const] : []))),
     listings: async (mints) => new Map(mints.flatMap((m) => (listings.has(m) ? [[m, listings.get(m)!] as const] : []))),
     listName: "the local token list",
   };

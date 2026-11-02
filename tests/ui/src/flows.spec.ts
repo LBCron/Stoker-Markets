@@ -32,7 +32,7 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   // The coin's own links, within its article: the footer links to Stoker's X and Telegram under the same names.
   for (const [label, href] of [["Website", COIN.website], ["X", COIN.x], ["Telegram", COIN.telegram]])
     await expect(page.getByRole("article").getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href!);
-  const image = page.locator("article header img");
+  const image = page.locator("article header img").first();
   await expect(image).toHaveJSProperty("complete", true);
   expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(256);
   const served = await page.request.get((await image.getAttribute("src"))!);
