@@ -47,13 +47,19 @@ test("a Google sign-in gets a Stoker wallet that launches a coin, and signing ou
   expect(wallet.requests).toHaveLength(1);
   expect(wallet.requests[0]!.message.staticAccountKeys[0]!.equals(wallet.keypair.publicKey)).toBe(true);
 
-  // Signing out disconnects the wallet and ends the provider's session, so nothing reconnects.
+  // The session holds across a page load: the Stoker wallet connects again by itself.
+  await page.goto("/coins");
+  await expect(connectedAs(page, STOKER_WALLET_NAME)).toBeVisible();
+
+  // Signing out disconnects the wallet and ends the provider's session, so nothing reconnects, not after a load either.
   await connectedAs(page, STOKER_WALLET_NAME).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(headerSignIn(page)).toBeVisible();
   const state = await signInState(page);
   expect(state.logouts).toBe(1);
   expect(state.authenticated).toBe(false);
+  await page.reload();
+  await expect(headerSignIn(page)).toBeVisible();
 });
 
 test("an email sign-in asks for the code, and a wrong code is told so", async ({ page, wallet }) => {

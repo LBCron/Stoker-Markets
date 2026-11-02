@@ -125,6 +125,7 @@ function install({ name, icon, address, publicKey, signIn }: InitArgs) {
   const notify = () => watchers.forEach((w) => w());
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
   let registered = false;
+  // The session outlives a page load, as the provider's does: kept in sessionStorage, restored on install.
   const signedIn = (account: Account) => {
     if (!registered) {
       registerWallet(makeWallet(signIn.walletName, signIn.icon));
@@ -133,8 +134,11 @@ function install({ name, icon, address, publicKey, signIn }: InitArgs) {
     state.authenticated = true;
     state.account = account;
     state.embeddedAddress = address;
+    window.sessionStorage.setItem(signIn.key, JSON.stringify(account));
     notify();
   };
+  const saved = window.sessionStorage.getItem(signIn.key);
+  if (saved) signedIn(JSON.parse(saved) as Account);
   (window as unknown as Record<string, unknown>)[signIn.key] = {
     ready: true,
     get authenticated() {
@@ -165,6 +169,7 @@ function install({ name, icon, address, publicKey, signIn }: InitArgs) {
       state.account = null;
       state.embeddedAddress = null;
       state.logouts += 1;
+      window.sessionStorage.removeItem(signIn.key);
       notify();
     },
     exportWallet: async () => {
