@@ -527,7 +527,6 @@ function Summary({
                     <QuoteLogo quote={quote} size={16} />
                     {ticker}
                     <span className={styles.factNote}>{quoteKind(quote)}</span>
-                    <Link href={`/assets/${quote.mint}`} className={styles.factLink}>About {ticker}</Link>
                   </span>
                 ) : (
                   "Choose a Quote Asset"
