@@ -533,7 +533,7 @@ test("stats page", async ({ page, stack }) => {
     p.locator("a.mono"),
     p.locator('dl[aria-labelledby="swept-title"] dd'),
     p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
-    p.getByRole("region", { name: "Key figures" }).locator("dd").first(),
+    p.getByRole("region", { name: "Key figures" }).locator("dl > div").first().locator("dd"),
     p.getByRole("region", { name: "Run the numbers" }),
   ]);
 });
