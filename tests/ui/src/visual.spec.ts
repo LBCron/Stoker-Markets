@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
-  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
-  SEED_HOLDER, test,
+  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins, listLaunches,
+  QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { chooseQuote } from "./launchPage";
@@ -85,6 +85,20 @@ test("home", async ({ page }) => {
   await expect(page.getByRole("list", { name: "Most traded today" }).last().getByRole("link").first()).toBeVisible();
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "home.png");
+});
+
+test.describe("a first visit", () => {
+  test.use({ firstVisit: true });
+
+  test("welcome", async ({ page }) => {
+    await page.goto("/");
+    const welcome = page.getByRole("dialog", { name: "Welcome to Stoker" });
+    await expect(welcome).toBeVisible();
+    await expect(welcome.getByRole("button", { name: "Continue" })).toBeFocused();
+    await page.evaluate(() => document.fonts.ready);
+    // The dialog on its own, the page hidden under it (`dialog.css`), as the trade disclaimer is shot.
+    await expect(welcome).toHaveScreenshot("disclaimer-welcome.png", { stylePath: DIALOG_STYLES });
+  });
 });
 
 test("board", async ({ page }) => {
@@ -171,6 +185,8 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-buy-quote.png", { mask: tradedDynamic(page) });
 
+  // The welcome recorded the acceptance for every test; a browser without the record meets the trade disclaimer instead.
+  await forgetDisclaimer(page);
   await panel.getByRole("button", { name: "Review buy" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you trade" });
   await expect(dialog).toBeVisible();
@@ -224,9 +240,6 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you trade" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
   // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
   await page.mouse.move(0, 0);
@@ -266,13 +279,14 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   // The pointer rests on the preset it clicked, which draws its hover; park it so the shot is the same every run.
   await page.mouse.move(0, 0);
-  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  // The quote carries one Fees line and the link to the Fees page (owner, 2026-10-30), no rates.
+  await expect(panel.getByText("Raydium's pool fees and the platform's")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-buy-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
   await panel.getByRole("button", { name: "50%", exact: true }).click();
   await page.mouse.move(0, 0);
-  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  await expect(panel.getByText("Raydium's pool fees and the platform's")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-sell-quote.png", { mask: tradedDynamic(page) });
   // Handed back, so the coin page's top holders look the same in every project whatever order they run in.
   await giveCoins(wallet.keypair, SEED_HOLDER.publicKey, mint, 1_000_000n * 1_000_000n);
@@ -303,6 +317,8 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await copyCheckSettled(page);
   await snap(page, "launch-filled.png");
 
+  // The welcome recorded the acceptance for every test; a browser without the record meets the launch disclaimer instead.
+  await forgetDisclaimer(page);
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
@@ -333,9 +349,6 @@ test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await snap(page, "launch-filled-stock.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("0.83333333 NVDAx");
   await snap(page, "launch-review-stock.png");
   expect(wallet.requests).toHaveLength(0);
@@ -364,9 +377,6 @@ test("launch form with a first buy and an airdrop", async ({ page, wallet }) => 
   await snap(page, "launch-options.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
   await snap(page, "launch-review-options.png");
   expect(wallet.requests).toHaveLength(0);
@@ -386,9 +396,6 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its review", a
   await snap(page, "launch-reward.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("It is sold for SOL in small slices and paid out in SOL.");
   await snap(page, "launch-review-reward.png");
   expect(wallet.requests).toHaveLength(0);
@@ -406,9 +413,6 @@ test("launch the network refused", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000`).join("\n"));
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
   await drain(wallet.keypair, 0.01);
   await page.getByRole("button", { name: "Sign and launch" }).click();
@@ -476,13 +480,17 @@ test("creator earnings page of a wallet that never launched", async ({ page }) =
   await snap(page, "creator-empty.png");
 });
 
-test("revenue page", async ({ page, stack }) => {
+test("stats page", async ({ page, stack }) => {
   const revenue = Revenue.parse(await (await fetch(`${stack.apiUrl}/v1/revenue`)).json());
   const ledger = LedgerPage.parse(await (await fetch(`${stack.apiUrl}/v1/ledger?limit=25`)).json());
   await page.goto("/revenue");
-  await expect(page.getByRole("heading", { name: "Platform revenue" })).toBeVisible();
+  // The Platform Token has not launched on the seeded stack, so the page carries its name and the market's empty state.
+  await expect(page.getByRole("heading", { level: 1, name: "STOKER" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet.");
+  await expect(page.getByRole("region", { name: "Key figures" }).getByRole("term")).toHaveCount(4);
+  await expect(page.getByRole("region", { name: "Run the numbers" }).getByRole("textbox")).toHaveCount(2);
   // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
-  const totals = page.getByRole("region", { name: "All time" }).getByRole("listitem");
+  const totals = page.getByRole("region", { name: "Revenue by asset" }).getByRole("listitem");
   await expect(totals).toHaveCount(revenue.totals.length);
   for (const [i, t] of revenue.totals.entries()) await expect(totals.nth(i)).toContainText(t.asset.symbol!);
   const entries = page.getByRole("region", { name: "Ledger" }).getByRole("listitem");
@@ -499,4 +507,12 @@ test("revenue page", async ({ page, stack }) => {
     p.locator('dl[aria-labelledby="swept-title"] dd'),
     p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
   ]);
+});
+
+test("fees page", async ({ page }) => {
+  await page.goto("/fees");
+  await expect(page.getByRole("heading", { level: 1, name: "Fees" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Every fee" }).getByRole("row").nth(1)).toBeVisible();
+  // The dated line is the page's one clock.
+  await snap(page, "fees.png", (p) => [p.locator("time")]);
 });

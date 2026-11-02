@@ -34,11 +34,6 @@ async function openConnectedPayingSol(page: Page, mint: string) {
 async function reviewBuy(page: Page) {
   const prepared = page.waitForResponse((r) => r.url().endsWith("/v1/trades/prepare"));
   await panel(page).getByRole("button", { name: "Review buy" }).click();
-  const disclaimer = page.getByRole("dialog", { name: "Before you trade" });
-  if (await disclaimer.isVisible().catch(() => false)) {
-    await disclaimer.getByRole("checkbox").check();
-    await disclaimer.getByRole("button", { name: "Continue" }).click();
-  }
   await expect(review(page)).toBeVisible();
   return PreparedTrade.parse(await (await prepared).json());
 }
@@ -74,7 +69,10 @@ test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coi
   await expect(quote.filter({ hasText: /^0\.1 SOL$/ })).toBeVisible();
   await expect(quote.filter({ hasText: /^5\.96\d+ JTO$/ })).toBeVisible();
   await expect(quote.filter({ hasText: /^0\.0179\d+ JTO$/ })).toBeVisible();
-  for (const fee of ["Swap to JTO", "Raydium", "Platform fee"]) await expect(panel(page).getByText(fee, { exact: false }).first()).toBeVisible();
+  // The fees in one line: the curve's in JTO and the swap's own in SOL in front of it (no rate anywhere but the Fees page).
+  await expect(panel(page).getByText("Fees", { exact: true })).toBeVisible();
+  await expect(quote.filter({ hasText: /^[\d.]+ JTO \+ [\d.]+ SOL$/ })).toBeVisible();
+  await expect(panel(page).getByRole("link", { name: "Every fee, explained" })).toHaveAttribute("href", "/fees");
   await expect(panel(page).getByText("Creator fee")).toHaveCount(0);
   await expect(
     panel(page).getByText(
