@@ -21,13 +21,6 @@ async function connectWallet(page: Page) {
   await expect(page.getByRole("button", { name: "Review buy" })).toBeVisible();
 }
 
-/** The first trade in a browser asks for the disclaimer before the review. */
-async function acceptDisclaimer(page: Page) {
-  const disclaimer = page.getByRole("dialog", { name: "Before you trade" });
-  await disclaimer.getByRole("checkbox").check();
-  await disclaimer.getByRole("button", { name: "Continue" }).click();
-}
-
 /** Types an amount, reviews, signs in the wallet, and waits for the confirmation. */
 async function tradeOnPage(page: Page, side: "buy" | "sell", amount: string | "All", confirm: RegExp) {
   await page.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: side === "buy" ? "Buy" : "Sell" }).click();
@@ -45,11 +38,10 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
   await page.goto(`/coin/${mint}`);
   await connectWallet(page);
 
-  // The first trade asks for the disclaimer, then the buy that takes the rest of the curve says so before signing.
+  // The buy that takes the rest of the curve says so before signing.
   await page.getByLabel("You pay").fill("2");
   await expect(page.getByText(/takes the last coins on the curve and starts graduation/)).toBeVisible();
   await page.getByRole("button", { name: "Review buy" }).click();
-  await acceptDisclaimer(page);
   await review(page).getByRole("button", { name: "Sign and buy" }).click();
   await expect(page.getByRole("status")).toHaveText(/^Bought [\d,]+ SUMT\. View transaction$/);
   expect(invokes(wallet.requests.at(-1)!)).toContain(LAUNCHLAB);
@@ -67,14 +59,12 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
   await expect(page.getByLabel("You pay")).toBeVisible();
   await expect(panel(page)).toContainText("This coin trades in its Raydium pool now.");
 
-  // A buy now goes through the pool, with the pool's fees.
+  // A buy now goes through the pool, with the pool's fees: one amount, the rates on the Fees page alone (owner, 2026-10-30).
   await page.getByLabel("You pay").fill("0.1");
   const quote = page.locator("dl").filter({ hasText: "You get about" });
-  // Mainnet's pool config (the local chain's since 2026-10-25): 1% creator fee of which Raydium keeps 5% at collection.
-  await expect(quote).toContainText("Raydium pool fee 0.25%");
-  await expect(quote).toContainText("Platform fee 0.95%");
-  await expect(quote).toContainText("Raydium keeps 0.05%");
-  await expect(quote).not.toContainText("Creator fee");
+  await expect(quote).toContainText("Raydium's pool fees and the platform's");
+  await expect(quote.getByRole("link", { name: "Every fee, explained" })).toHaveAttribute("href", "/fees");
+  for (const row of ["Raydium pool fee", "Platform fee", "Raydium keeps", "Creator fee"]) await expect(quote).not.toContainText(row);
   await expect(page.getByText(/takes the last coins on the curve/)).toBeHidden();
   const before = await coinBalance(wallet.keypair, mint);
   const requests = wallet.requests.length;
@@ -89,7 +79,7 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
   await page.getByRole("button", { name: "50%", exact: true }).click();
   await expect(page.getByText("The coins you sell go to the coin's Raydium pool.")).toBeVisible();
   await expect(quote).toContainText(/Fees[\d.,\s]+SOL \+ [\d,]+ SUMT/);
-  await expect(quote).toContainText(/Raydium pool fee 0\.25%[\d,\s]+SUMT/);
+  await expect(quote).toContainText("Raydium's pool fees and the platform's");
   const held = await coinBalance(wallet.keypair, mint);
   await page.getByRole("button", { name: "Review sell" }).click();
   await review(page).getByRole("button", { name: "Sign and sell" }).click();
@@ -121,7 +111,6 @@ test("a trader can sell out of a graduated coin they bought on the curve", async
   await connectWallet(page);
   await page.getByLabel("You pay").fill("0.2");
   await page.getByRole("button", { name: "Review buy" }).click();
-  await acceptDisclaimer(page);
   await review(page).getByRole("button", { name: "Sign and buy" }).click();
   await expect(page.getByRole("status")).toHaveText(/^Bought [\d,]+ EARLY\. View transaction$/);
 

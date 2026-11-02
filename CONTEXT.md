@@ -63,6 +63,11 @@ What kind of asset a Quote Asset is, one of ten (SOL, stablecoin, tokenized stoc
 The board filters by it and the assets page groups by it; a tokenized stock also carries its issuer.
 _Avoid_: Type, sector, class
 
+**Market behind an asset**:
+The market TradingView charts for a Quote Asset: the stock or fund a tokenized stock tracks, the coin a wrapped coin wraps, or the coin's own market (#124).
+Known from the issuer's ticker or the mint address, never from a name, and absent for an asset with no public market (a private company's token, a collectible); the asset's page charts it.
+_Avoid_: Underlying (on its own), real price, reference price
+
 **First Buy**:
 The Creator's own buy of their coin, made inside the launch transaction right after the curve is created, so no other trade can come before it.
 _Avoid_: Dev buy, initial buy, snipe
@@ -98,8 +103,16 @@ Also one such payment.
 _Avoid_: Creator Fee (that is LaunchLab's on-chain term), payout, rebate, revenue share, claim
 
 **Creator Earnings**:
-What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, sent and still to be sent, per Quote Asset and per Launch on their own page (`/creator`), which only the connected wallet sees and is offered once it has launched a coin; there is no public creator page (owner, 2026-10-08).
+What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, kept as Graduation Fees, sent and still to be sent, per Quote Asset and per Launch on their own page (`/creator`), which only the connected wallet sees and is offered once it has launched a coin; there is no public creator page (owner, 2026-10-08).
 _Avoid_: Creator Fee, claimable, rewards (those are for holders)
+
+**Graduation Fee**:
+What the platform charges when a coin graduates, a set worth in SOL (0.015 SOL on mainnet, `GRADUATION_FEE_LAMPORTS`), withheld from the Creator's earnings on that coin in the coin's Quote Asset at the Quote Registry's price, from their next Creator Forwards until paid, never out of their wallet and never from the holders' Reward Tax; each withholding is a `graduation_fee` entry on the Ledger against the graduation (ADR 0015).
+_Avoid_: Migration fee, listing fee, graduation tax
+
+**Fees page**:
+The page at `/fees`, the one place on the site that shows a fee figure (owner, 2026-10-30): every fee a visitor can pay, who pays it, when, in what asset and who receives it, each figure read from `GET /v1/platform` as the page opens; every other page says what a fee is for and links there.
+_Avoid_: pricing, fee schedule, tariff
 
 ### Revenue
 

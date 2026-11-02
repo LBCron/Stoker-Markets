@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import type { LaunchSummary, LaunchTrust, PlatformInfo } from "@launchpad/contract";
-import { creatorEarnings } from "@/lib/fees";
-import { explorerUrl, formatDuration, formatShare, formatUtc, quoteTicker } from "@/lib/format";
+import { explorerUrl, formatDuration, formatShare, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Address } from "./Address";
 import { CopyButton } from "./CopyButton";
 import styles from "./CoinFacts.module.css";
 
 /**
  * The About block and the addresses, under the trade panel and the pair card (owner, 2026-10-31): the description, the
- * launch's details, what the Creator earns, the liquidity's state, the dates, the Copy Protection's length and end, the
+ * launch's details, what the Creator earns (in words: the Fees page is the one place a fee figure is shown, owner
+ * 2026-10-30) and the Graduation Fee once there is one, the liquidity's state, the dates, the Copy Protection's length and end, the
  * coin's own links and the aggregators, then every address with its copy button. Drawn on the client from data like the
  * rest of the market: a server-rendered tree handed through the client boundary as a prop warned about missing keys on
  * the page with an Airdrop to send (2026-10-31), the same trap the pair card met.
@@ -89,10 +89,25 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
           <div>
             <dt>Creator earns</dt>
             <dd>
-              {creatorEarnings(platform).summary}
-              <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
+              Half of what the platform collects on this coin
+              <span>Sent to the Creator&apos;s wallet with nothing to claim, on the curve and after graduation. <Link href="/fees">Every fee, explained</Link></span>
             </dd>
           </div>
+          {launch.graduation?.fee && (
+            <div>
+              <dt>Graduation Fee</dt>
+              <dd>
+                {formatUnits(launch.graduation.fee.lamports, SOL_DECIMALS, 4)} SOL&apos;s worth
+                <span>
+                  {launch.graduation.fee.settledAt
+                    ? `Withheld from the Creator's earnings in full: ${formatUnits(launch.graduation.fee.withheld, launch.quote.decimals, launch.quote.decimals)} ${quote}.`
+                    : launch.graduation.fee.withheld === "0"
+                      ? "Withheld from the Creator's next earnings, in the coin's Quote Asset, once something is collected for them."
+                      : `${formatUnits(launch.graduation.fee.withheld, launch.quote.decimals, launch.quote.decimals)} ${quote} withheld from the Creator's earnings so far; the rest comes out of their next ones.`}
+                </span>
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Liquidity</dt>
             <dd>{liquidity}</dd>

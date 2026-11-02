@@ -1,4 +1,3 @@
-import { creatorEarnings } from "@/lib/fees";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,12 +22,12 @@ function referrerFrom(params: Record<string, string | string[] | undefined>) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mint } = await params;
-  const [launch, platform] = await Promise.all([getLaunch(mint), getPlatform()]);
+  const launch = await getLaunch(mint);
   if (!launch) return pageMeta({ path: `/coin/${mint}`, title: "Coin not found", index: false });
   const quote = quoteTicker(launch.quote);
   // Its own description when the Creator wrote one; otherwise its pair and what its Creator earns (#83).
   const description = launch.description?.trim()
-    || `${launch.name} (${launch.symbol}) trades on Stoker paired with ${quote}; its creator earns ${creatorEarnings(platform).headline}, every payment on the public ledger.`;
+    || `${launch.name} (${launch.symbol}) trades on Stoker paired with ${quote}; its creator earns half of what the platform collects on its trades, every payment on the public ledger.`;
   return pageMeta({ path: `/coin/${launch.mint}`, title: `${launch.symbol} / ${quote}`, description: clip(description), card: "own" });
 }
 

@@ -1,20 +1,17 @@
 import { ImageResponse } from "next/og";
-import { getPlatform } from "@/lib/api";
-import { creatorEarnings } from "@/lib/fees";
 import { SITE_CARD } from "@/lib/meta";
 import { CARD, DISPLAY, RING, SHARE_SIZE, ShareFrame, shareFonts } from "@/lib/share";
 
 /**
  * The site's share card (#83), as a link to any page without a card of its own unfurls: the slogan with its emphasised
- * half in the heat, the lede with the creator's cut from the chain, and the ring. A coin's page draws its own.
+ * half in the heat, the lede with the creator's cut in words (the Fees page is the one place a fee figure is shown,
+ * owner 2026-10-30), and the ring. A coin's page draws its own.
  */
 export const alt = SITE_CARD.alt;
 export const size = SHARE_SIZE;
 export const contentType = "image/png";
 
 export default async function Image() {
-  const platform = await getPlatform();
-  const earns = creatorEarnings(platform);
   return new ImageResponse(
     (
       <ShareFrame>
@@ -27,7 +24,7 @@ export default async function Image() {
             <span style={{ backgroundImage: `linear-gradient(90deg, ${CARD.heatLow}, ${CARD.heatHigh})`, backgroundClip: "text", color: "transparent" }}>You do.</span>
           </div>
           <div style={{ display: "flex", marginTop: 28, fontSize: 28, lineHeight: 1.35, color: CARD.ink2 }}>
-            Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes. Creators earn {earns.headline}.
+            Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes. Creators earn half of what the platform collects on their coin.
           </div>
         </div>
       </ShareFrame>

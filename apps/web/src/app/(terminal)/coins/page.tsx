@@ -14,7 +14,16 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 /** The board: every coin, in the terminal look; the home page is the landing. */
 export default async function CoinsPage({ searchParams }: Props) {
-  const query = boardQueryFrom(await searchParams);
+  const params = await searchParams;
+  const query = boardQueryFrom(params);
   const [board, quotes] = await Promise.all([listLaunches(query), listLaunchQuotes()]);
-  return <Board initial={board.launches} initialQuery={query} quotes={quotes.quotes} renderedAt={Date.now()} />;
+  return (
+    <Board
+      initial={board.launches}
+      initialMore={board.nextOffset !== null}
+      initialQuery={query}
+      quotes={quotes.quotes}
+      renderedAt={Date.now()}
+    />
+  );
 }

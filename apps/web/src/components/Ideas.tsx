@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { PlatformInfo, QuoteAsset } from "@launchpad/contract";
-import { creatorEarnings } from "@/lib/fees";
 import { quoteTicker } from "@/lib/format";
 import { cycleQuotes, quoteKind } from "@/lib/landing";
 import { PairMark } from "./PairMark";
@@ -11,13 +10,12 @@ import styles from "./Ideas.module.css";
 const EXAMPLE_COIN = "STOKER";
 
 /**
- * One section per idea, each with its own visual (#133, after the research): the pair, the Creator's cut with its
- * figure, and the trust layer. The text sits in six columns and the visual in six, sides alternating; on a phone the
- * text comes first. Every figure is from the chain through the platform facts, never a constant.
+ * One section per idea, each with its own visual (#133, after the research): the pair, the Creator's cut said in
+ * words (the Fees page is the one place a fee figure is shown, owner 2026-10-30), and the trust layer. The text sits in six columns and the visual in six, sides alternating; on a phone the
+ * text comes first. The count is live from the Quote Registry, never a constant.
  */
-export function Ideas({ platform, quotes }: { platform: PlatformInfo; quotes: QuoteAsset[] }) {
+export function Ideas({ quotes }: { platform: PlatformInfo; quotes: QuoteAsset[] }) {
   const count = quotes.length.toLocaleString("en-US");
-  const earns = creatorEarnings(platform);
   const examples = cycleQuotes(quotes).slice(0, 3);
   return (
     <div className={styles.ideas}>
@@ -54,9 +52,11 @@ export function Ideas({ platform, quotes }: { platform: PlatformInfo; quotes: Qu
         </div>
         <div className={`col-6 ${styles.visual}`}>
           <p className={styles.cut}>
-            <span className={`t-figure-xl heat-text ${styles.cutFigure}`}>~{earns.curve}%</span>
-            <span className={styles.cutLabel}>of every trade, to you</span>
-            <span className={`t-caption ${styles.cutNote}`}>{earns.summary.replace(/^~[\d.]+% of every trade,? /, "")}</span>
+            <span className={`t-figure-xl heat-text ${styles.cutFigure}`}>Half</span>
+            <span className={styles.cutLabel}>of what the platform collects, to you</span>
+            <span className={`t-caption ${styles.cutNote}`}>
+              On the curve and after graduation, in the asset your coin trades in. <Link href="/fees">Every fee, explained</Link>
+            </span>
           </p>
         </div>
       </section>

@@ -10,6 +10,7 @@ import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeOverride } from "@/components/ThemeOverride";
+import { Welcome } from "@/components/Welcome";
 import { getPlatform, listAnnouncements } from "@/lib/api";
 import { SHARED_OPEN_GRAPH, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, TWITTER_CARD } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
@@ -85,6 +86,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
           <SiteFooter platform={platform} />
+          <Welcome />
         </Providers>
       </body>
     </html>

@@ -42,11 +42,15 @@ export const [EXPLORE_LINK, SWAP_LINK, ASSETS_LINK, REWARDS_LINK, STATS_LINK, CU
  */
 export const API_LINK = { href: "/api", label: "Developers" } as const satisfies NavLink;
 
-/** The legal pages (#131): drafts the owner approves before the site opens, linked from both footers. */
+/** The Fees page (owner, 2026-10-30): the one place on the site that shows a fee figure, linked from both footers' Legal group. */
+export const FEES_LINK = { href: "/fees", label: "Fees" } as const satisfies NavLink;
+
+/** The legal pages (#131): drafts the owner approves before the site opens, linked from both footers, with the Fees page beside them. */
 export const LEGAL_LINKS = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
   { href: "/risk", label: "Risk disclosure" },
+  FEES_LINK,
 ] as const satisfies readonly NavLink[];
 
 /**

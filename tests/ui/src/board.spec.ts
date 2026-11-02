@@ -52,13 +52,19 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await page.goto("/coins");
   await expect(sorts(page).getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();
   await expectBoard(page, { sort: "market_cap" });
+  // The list is named as the fact it is, with when it last updated (#135); the figures a trader scans for are in the row.
+  await expect(page.getByRole("status")).toHaveText(/^\d+ coins by market cap, updated \d+s ago$/);
+  const highRow = page.getByRole("list", { name: "Coins" }).locator(`a[href="/coin/${high}"]`);
+  await expect(highRow.locator("[data-label='24h']")).toHaveText(/^\+[\d.]+%$/);
+  await expect(highRow.locator("[data-label='Holders']")).toHaveText("1");
 
-  // Each sort shows the coins in the API's order for it, and the address says which sort it is.
-  for (const [label, sort] of [["Newest", "new"], ["24h volume", "trending"], ["Near graduation", "graduation"]] as const) {
+  // Each sort shows the coins in the API's order for it, the address says which sort it is, and the status line names it.
+  for (const [label, sort, fact] of [["Newest", "new", "newest first"], ["24h volume", "trending", "by 24h volume"], ["Near graduation", "graduation", "nearest Graduation first"]] as const) {
     await sorts(page).getByRole("button", { name: label }).click();
     await expect(page).toHaveURL(new RegExp(`/coins\\?sort=${sort}$`));
     await expect(sorts(page).getByRole("button", { name: label, pressed: true })).toBeVisible();
     await expectBoard(page, { sort });
+    await expect(page.getByRole("status")).toContainText(`coins ${fact}, updated`);
   }
   // By market cap, the coin bought with the most SOL leads its sibling.
   const byCap = await expected({ sort: "market_cap" });
@@ -70,9 +76,10 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await expectBoard(page, { sort: "graduation", category: "stablecoin" });
   await expect(cards(page).filter({ hasNotText: "/USDC" })).toHaveCount(0);
 
-  // The bar lists only what coins are paired with, after its kind: USDC after Currencies, NVDAx after xStocks.
+  // The bar lists only what coins are paired with, after its kind: USDC after Currencies, NVDAx after xStocks. An asset's
+  // chip carries the day's volume across its coins; the stock coin has not traded, so its chip says nothing of volume.
   await expect(railRow(page, "USDC")).toHaveAccessibleName(/^USDC \d+ coins? \$[\d.,]+[KMB]?$/);
-  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx \d+ coins? \$[\d.,]+[KMB]?$/);
+  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx \d+ coins?$/);
   await expect(paired(page).getByRole("button", { name: /^TAXQ/ })).toHaveCount(0);
 
   // One asset narrows the board to that pair, whatever kind was chosen.
@@ -165,9 +172,6 @@ test("the coin page shows top holders that match the chain, and whether the Crea
   await panel.getByRole("button", { name: "0.1 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
   await panel.getByRole("button", { name: "Review buy" }).click();
-  const disclaimer = page.getByRole("dialog", { name: "Before you trade" });
-  await disclaimer.getByRole("checkbox").check();
-  await disclaimer.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("region", { name: "Review your trade" }).getByRole("button", { name: "Sign and buy" }).click();
   await expect(panel.getByRole("status")).toContainText(/^Bought /);
   const bought = await coinsHeld(wallet.keypair.publicKey, mint);
