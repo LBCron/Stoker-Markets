@@ -349,6 +349,8 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
+  // A viewport shot: the page behind the modal sits wherever the index's scroll to the sticky summary left it, so pin it.
+  await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page).toHaveScreenshot("launch-disclaimer.png", { mask: dynamic(page) });
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
@@ -524,12 +526,15 @@ test("stats page", async ({ page, stack }) => {
   // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
   // (7.959784 one run, 7.959779 another), in the summary and in the Ledger's sweep entries alike (the entry's amount
   // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades. The annualized figure
-  // divides by the days since the first collection, which is today on the seeded stack, so it holds too.
+  // divides by the days since the first collection, so a run that crosses midnight halves it (2026-11-02): the figure and
+  // the calculator that starts from it are masked.
   await snap(page, "revenue.png", (p) => [
     p.locator("time"),
     p.locator("a.mono"),
     p.locator('dl[aria-labelledby="swept-title"] dd'),
     p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
+    p.getByRole("region", { name: "Key figures" }).locator("dd").first(),
+    p.getByRole("region", { name: "Run the numbers" }),
   ]);
 });
 
