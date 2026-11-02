@@ -112,7 +112,7 @@ creatorEarningsRoutes.get("/creators/:address/forwards", async (c) => {
     .from(creatorForwards)
     .where(and(eq(creatorForwards.creator, creator), inArray(creatorForwards.status, ["sending", "paid"])))
     // Newest first by when the platform sent it: the row's own clock, which is strictly ordered, where the chain's block
-    // time is whole seconds and two forwards of one run tie or not by chance (seen on 2026-10-30).
+    // time is whole seconds and two forwards of one run tie or not by chance (seen on 2026-10-30; the same line as #158).
     .orderBy(desc(creatorForwards.createdAt), desc(creatorForwards.signature))
     .limit(limit);
   const quote = await quoteRefs(db, new Map(rows.map((r) => [r.assetMint, r.assetDecimals])));

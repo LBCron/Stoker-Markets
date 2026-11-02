@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, listTrades } from "@/lib/api";
-import { explorerUrl, formatUnits, formatUtc, isSol, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
+import { explorerUrl, formatUnits, formatUtc, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
@@ -11,6 +11,7 @@ import { PairMark } from "@/components/PairMark";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
 import styles from "./page.module.css";
+import { Address } from "@/components/Address";
 
 type Props = { params: Promise<{ mint: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -179,9 +180,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             <div key={label}>
               <dt>{label}</dt>
               <dd>
-                <a className="mono" href={explorerUrl(kind, value, platform)} target="_blank" rel="noreferrer">
-                  {shortAddress(value)}
-                </a>
+                <Address value={value} kind={kind} platform={platform} />
                 <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
               </dd>
             </div>
