@@ -65,8 +65,10 @@ async function snap(page: Page, name: string, mask = dynamic) {
   await expectHydrated(page);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
-  // A full-page capture of a scrolled page stitches the sticky header into the middle.
-  await page.evaluate(() => window.scrollTo(0, 0));
+  // A full-page capture of a scrolled page stitches the sticky header into the middle, and one taken while a scroll is
+  // still in flight catches a sticky column partway (the launch summary, 2026-11-02): back to the top, and held there.
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expect.poll(() => page.evaluate(() => window.scrollY), { message: "the page is not at the top" }).toBe(0);
   // After the scroll the pointer rests over whatever now sits where it last clicked; park it on the page's corner so no field shows a hover.
   await page.mouse.move(0, 0);
   await expect(page).toHaveScreenshot(name, { fullPage: true, mask: mask(page) });

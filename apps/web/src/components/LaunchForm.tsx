@@ -196,10 +196,15 @@ export function LaunchForm({
     void prepare();
   }
 
-  /** On a phone the step is shown alone; on a desktop every step is in view and the index scrolls to it. */
+  /**
+   * On a phone the step is shown alone; on a desktop every step is in view and the index scrolls to it. The scroll is
+   * instant for a visitor who asked for less motion (and so for the suite's stilled shots, which caught the sticky
+   * summary mid-animation once, 2026-11-02).
+   */
   function goTo(id: StepId) {
     setCurrent(id);
-    document.getElementById(`step-${id}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
+    document.getElementById(`step-${id}`)?.scrollIntoView({ block: "start", behavior });
   }
 
   const review = step.kind === "reviewing" || step.kind === "signing" || step.kind === "confirming" ? step.review : null;
