@@ -20,6 +20,8 @@
 
 .prose h2 {
   margin: 28px 0 8px;
+  /* A heading reached by its anchor (the risk page's Platform Token section) lands under the floating header. */
+  scroll-margin-top: calc(var(--header-h) + 16px);
 }
 
 .prose p,
