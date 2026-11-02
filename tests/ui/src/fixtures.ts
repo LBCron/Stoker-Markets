@@ -312,6 +312,8 @@ export const test = base.extend<{
   browserErrors: void;
   /** A browser that has never visited: the welcome opens on the first page. Every other test has accepted it already. */
   firstVisit: boolean;
+  /** The sign-in provider's stand-in is installed (ADR 0016); off, the sheet offers the wallets alone. */
+  socialSignIn: boolean;
 }>({
   // eslint-disable-next-line no-empty-pattern
   stack: async ({}, use) => use(stackEnv()),
@@ -321,7 +323,8 @@ export const test = base.extend<{
     if (!firstVisit) await context.addInitScript((key) => window.localStorage.setItem(key, "accepted"), DISCLAIMER_KEY);
     await use(context);
   },
-  wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),
+  socialSignIn: [true, { option: true }],
+  wallet: async ({ page, socialSignIn }, use) => use(await installTestWallet(page, await fundedKeypair(), { socialSignIn })),
   // eslint-disable-next-line no-empty-pattern
   expectedHttpErrors: async ({}, use) => use([]),
   browserErrors: [
