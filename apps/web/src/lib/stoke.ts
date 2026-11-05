@@ -2,7 +2,8 @@
  * The stoke (#133, hero candidate D): the heating ring drawn on a canvas, from dark coal through a dull red to the
  * heat ramp, with its bloom swelling as it heats and a few embers rising off it, then cooling back, in a slow loop.
  * The geometry is the mark's (`Mark.tsx`: a ring of radius 8.6 with a 4.2 stroke on a 32-unit box) and the ramp is
- * the mark's fixed one, so the ring at full heat is the `Ring` at the same size. Framework-free, so the review page
+ * the tile-less ring's tokens (`--ring-high`, `--ring-low`, `--ring-glow`, read from the canvas once), so the ring at full
+ * heat is the `Ring` at the same size in whichever heat the page shows. Framework-free, so the review page
  * runs the same loop; `Stoke.tsx` mounts it and shows the still ring under `prefers-reduced-motion`.
  */
 
@@ -13,12 +14,20 @@ export const STOKE_HEADROOM = 0.3;
 
 type Rgb = readonly [number, number, number];
 
-/** The mark's ramp: amber at the top right, ember at the bottom left. */
+/** The mark's ramp as built: amber at the top right, ember at the bottom left, and the dull red between coal and heat. */
 const AMBER: Rgb = [0xff, 0xb0, 0x20];
 const EMBER: Rgb = [0xff, 0x5a, 0x1f];
-/** Coal, and the dull red it passes through on the way to heat. */
-const COAL: Rgb = [0x2a, 0x22, 0x1f];
 const GLOW: Rgb = [0x8a, 0x2c, 0x12];
+/** Coal, where every stoke starts. */
+const COAL: Rgb = [0x2a, 0x22, 0x1f];
+
+/** A `#rrggbb` token's value, or the fallback when the token is unset or not a hex colour. */
+function tokenRgb(style: CSSStyleDeclaration, name: string, fallback: Rgb): Rgb {
+  const m = /^#([0-9a-f]{6})$/i.exec(style.getPropertyValue(name).trim());
+  if (!m) return fallback;
+  const n = parseInt(m[1]!, 16);
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+}
 
 const RING_RADIUS = 8.6 / 32;
 const RING_STROKE = 4.2 / 32;
@@ -38,9 +47,9 @@ export function heatAt(phase: number) {
   return 1 - smooth((phase - RISE - HOLD) / (1 - RISE - HOLD));
 }
 
-/** A ramp stop at a heat: coal, then the dull red, then the stop's own colour. */
-function stopAt(stop: Rgb, heat: number): Rgb {
-  return heat < 0.5 ? mix(COAL, GLOW, heat / 0.5) : mix(GLOW, stop, (heat - 0.5) / 0.5);
+/** A ramp stop at a heat: coal, then the dull glow, then the stop's own colour. */
+function stopAt(stop: Rgb, glow: Rgb, heat: number): Rgb {
+  return heat < 0.5 ? mix(COAL, glow, heat / 0.5) : mix(glow, stop, (heat - 0.5) / 0.5);
 }
 
 type Ember = { x: number; y: number; vx: number; vy: number; age: number; life: number; size: number; sway: number; tint: Rgb };
@@ -52,6 +61,10 @@ type Ember = { x: number; y: number; vx: number; vy: number; age: number; life: 
 export function startStoke(canvas: HTMLCanvasElement, size: number): () => void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return () => {};
+  const tokens = getComputedStyle(canvas);
+  const hot = tokenRgb(tokens, "--ring-high", EMBER);
+  const cool = tokenRgb(tokens, "--ring-low", AMBER);
+  const glow = tokenRgb(tokens, "--ring-glow", GLOW);
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const width = size;
   const height = Math.round(size * (1 + STOKE_HEADROOM));
@@ -83,7 +96,7 @@ export function startStoke(canvas: HTMLCanvasElement, size: number): () => void 
       life: 2.2 + Math.random() * 1.8,
       size: size * (0.007 + Math.random() * 0.008),
       sway: Math.random() * Math.PI * 2,
-      tint: Math.random() < 0.5 ? AMBER : EMBER,
+      tint: Math.random() < 0.5 ? cool : hot,
     });
   };
 
@@ -94,13 +107,13 @@ export function startStoke(canvas: HTMLCanvasElement, size: number): () => void 
 
     // The ring: the ramp warms from coal; the bloom is the ring's own shadow, swelling with the heat.
     const ramp = ctx.createLinearGradient(cx - radius, cy + radius, cx + radius, cy - radius);
-    ramp.addColorStop(0, rgba(stopAt(EMBER, heat)));
-    ramp.addColorStop(1, rgba(stopAt(AMBER, heat)));
+    ramp.addColorStop(0, rgba(stopAt(hot, glow, heat)));
+    ramp.addColorStop(1, rgba(stopAt(cool, glow, heat)));
     ctx.lineWidth = stroke;
     ctx.strokeStyle = ramp;
     if (heat > 0.02) {
       ctx.save();
-      ctx.shadowColor = rgba(mix(EMBER, AMBER, 0.35), 0.75 * heat);
+      ctx.shadowColor = rgba(mix(hot, cool, 0.35), 0.75 * heat);
       ctx.shadowBlur = stroke * 1.6 * heat;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);

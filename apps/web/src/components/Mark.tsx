@@ -2,8 +2,8 @@ import { useId } from "react";
 
 /**
  * The mark inline (owner, 2026-10-09): E2, the heating ring, the same drawing as /icon.svg. Inline so it is crisp at any
- * size and needs no request. The ring's ramp is fixed (the heat is the same in every direction and mode); the tile is
- * the direction's dark canvas (`--tile`, docs/design/principles.md), so one mark serves both modes and the tile never
+ * size and needs no request. The ring's ramp is the mark's own tokens (`--mark-high`, `--mark-low` in globals.css: the
+ * same in every mode, and the cold flame's under `?theme=cold`); the tile is the direction's dark canvas (`--tile`, docs/design/principles.md), so one mark serves both modes and the tile never
  * reads as a mistake beside the page. Gradient and filter ids are per instance, since a page can carry several marks.
  */
 export function Mark({ size = 28, className }: { size?: number; className?: string }) {
@@ -14,8 +14,8 @@ export function Mark({ size = 28, className }: { size?: number; className?: stri
     <svg viewBox="0 0 32 32" width={size} height={size} className={className} aria-hidden="true">
       <defs>
         <linearGradient id={heat} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#ff5a1f" />
-          <stop offset="1" stopColor="#ffb020" />
+          <stop offset="0" style={{ stopColor: "var(--mark-high, #ff5a1f)" }} />
+          <stop offset="1" style={{ stopColor: "var(--mark-low, #ffb020)" }} />
         </linearGradient>
         <filter id={bloom} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="1.6" />
@@ -40,8 +40,8 @@ export function Ring({ size = 96, className }: { size?: number; className?: stri
     <svg viewBox="0 0 32 32" width={size} height={size} className={className} aria-hidden="true">
       <defs>
         <linearGradient id={heat} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#ff5a1f" />
-          <stop offset="1" stopColor="#ffb020" />
+          <stop offset="0" style={{ stopColor: "var(--ring-high, #ff5a1f)" }} />
+          <stop offset="1" style={{ stopColor: "var(--ring-low, #ffb020)" }} />
         </linearGradient>
         <filter id={bloom} x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="2.4" />

@@ -4,8 +4,10 @@
  * block of the same role tokens in globals.css; `NEXT_PUBLIC_THEME` at build picks the active one, applied as
  * `data-theme` on <html>, and `?theme=` on any page shows another without a deploy (unlisted, for the owner's eye;
  * components/ThemeOverride.tsx). A switch after launch is that one setting plus a re-baseline run and re-rendered marks.
+ * `cold` is a candidate, not a direction: Teal's tokens with the heat ramp as a cold flame (cyan to white-hot) in
+ * place of amber to ember, built 2026-11-05 for the owner to see on the real site after EmberCurve's orange.
  */
-export const THEMES = ["teal", "cobalt", "violet"] as const;
+export const THEMES = ["teal", "cobalt", "violet", "cold"] as const;
 export type Theme = (typeof THEMES)[number];
 
 export const DEFAULT_THEME: Theme = "teal";
@@ -19,4 +21,5 @@ export const THEME_GROUNDS: Record<Theme, { light: string; dark: string }> = {
   teal: { light: "#f5f8f9", dark: "#05090e" },
   cobalt: { light: "#f6f8fc", dark: "#070a12" },
   violet: { light: "#f7f6fc", dark: "#09081a" },
+  cold: { light: "#f5f8f9", dark: "#05090e" },
 };

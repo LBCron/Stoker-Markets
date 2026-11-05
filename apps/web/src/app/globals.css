@@ -319,6 +319,16 @@
   --down-bg: #fde6e8;
   --caution: #9a5d05;
   --caution-bg: #fef5df;
+  /* The mark's own ramp, the same in both schemes since the ring sits on its dark tile: the hottest end first (Mark.tsx,
+     the stoke in src/lib/stoke.ts), and the dull glow the stoke passes through on its way from coal. */
+  --mark-high: #ff5a1f;
+  --mark-low: #ffb020;
+  --mark-glow: #8a2c12;
+  /* The ring without its tile (the stoke, the invitation, an empty state) sits on the page's own ground, so its ramp may
+     differ from the mark's where the mark's would vanish: the amber one reads on both grounds and is the mark's. */
+  --ring-high: var(--mark-high);
+  --ring-low: var(--mark-low);
+  --ring-glow: var(--mark-glow);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -345,6 +355,44 @@
   --down-bg: #3a1a22;
   --caution: #fbbf24;
   --caution-bg: #3a2d12;
+}
+
+/*
+  The cold flame (a candidate, 2026-11-05): the same Teal direction with the heat as the hottest part of a fire, blue-white,
+  in place of amber to ember. Cyan at the cool end and white-hot at the hot end in the dark; cerulean to cyan in the
+  light, where white-hot would vanish. The ring's ramp follows. Shown with `?theme=cold`; nothing else changes.
+*/
+:root[data-theme="cold"] {
+  --brand: #0a6fa8;
+  --heat-low: #0e8fd0;
+  --heat-high: #19b8d9;
+  --mark-high: #eafcff;
+  --mark-low: #31c6f6;
+  --mark-glow: #1b3f6e;
+  /* On a light ground the white-hot end disappears: the tile-less ring takes the light heat instead. */
+  --ring-high: #19b8d9;
+  --ring-low: #0e8fd0;
+  --ring-glow: #0a4c7a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="cold"]:not([data-scheme="light"]) {
+    --brand: #7fd0ff;
+    --heat-low: #31c6f6;
+    --heat-high: #eafcff;
+    --ring-high: var(--mark-high);
+    --ring-low: var(--mark-low);
+    --ring-glow: var(--mark-glow);
+  }
+}
+
+:root[data-theme="cold"][data-scheme="dark"] {
+  --brand: #7fd0ff;
+  --heat-low: #31c6f6;
+  --heat-high: #eafcff;
+  --ring-high: var(--mark-high);
+  --ring-low: var(--mark-low);
+  --ring-glow: var(--mark-glow);
 }
 
 :root {
