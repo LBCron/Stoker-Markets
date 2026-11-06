@@ -15,9 +15,12 @@ import { accountArea, connectFromSite, connectTestWallet, installTestWallet, ope
 // as a whole: it draws in a frame of its own, whose canvases a mask on the page cannot reach. Before a coin's first trade
 // the plot holds only its note, which is shown. Only what is visible: content of a closed <details> still has a box, and
 // masking it would paint over whatever is on screen there. The wallet's avatar draws its hues from the address, which
-// every run draws afresh, so it is masked like the address.
+// every run draws afresh, so it is masked like the address. A coin row's five-minute change reads the seed's trades while
+// the shot lands within five minutes of them and 0.0% after, which a slow run reaches (the board, 2026-11-06), so it is a
+// clock like any time.
 const CHART = '[data-chart]:not([data-chart="empty"])';
-const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas", CHART, "[data-avatar]"].map((s) => page.locator(s).filter({ visible: true }));
+const FIVE_MINUTES = '[data-label="5m"]';
+const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas", CHART, FIVE_MINUTES, "[data-avatar]"].map((s) => page.locator(s).filter({ visible: true }));
 
 /**
  * A traded coin's amounts and prices follow from the fixed seed trades, so only what really varies is masked: times, the
