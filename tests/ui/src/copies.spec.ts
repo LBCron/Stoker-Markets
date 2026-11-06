@@ -32,7 +32,7 @@ test("the launch form's copy check names the protected coin, and the coin page s
   await page.locator('input[type="file"]').setInputFiles({ name: "forge.png", mimeType: "image/png", buffer: coinImage("FORGE") });
   await expect(verdict("name")).toHaveText("Free");
   await expect(verdict("symbol")).toHaveText("Free");
-  await expect(verdict("image")).toHaveText("Not a copy of a protected coin's");
+  await expect(verdict("image")).toHaveText("Not a protected coin's image");
 
   // The wallet connected is not the Creator, so the ticker stays taken for it; the coin page says for how long.
   expect(wallet.keypair.publicKey.equals(creator.publicKey)).toBe(false);
