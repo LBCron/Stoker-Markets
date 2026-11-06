@@ -8,7 +8,7 @@ import {
   QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
-import { chooseQuote, signButton, toStep } from "./launchPage";
+import { chooseQuote, signButton } from "./launchPage";
 import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
@@ -306,37 +306,34 @@ test("coin not found", async ({ page }) => {
   await snap(page, "coin-not-found.png");
 });
 
-/**
- * The wallet prompt sits in the summary, which on a phone is the review step (phase 5, #136): connecting goes there and
- * comes back to the coin step. On a desktop every step is in view and the index only scrolls.
- */
+/** The wallet prompt sits in the summary: beside the form on a desktop, after it on a phone (one page, #172). */
 async function connectOnForm(page: Page) {
-  await toStep(page, "review");
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
-  await toStep(page, "coin");
 }
 
 async function fillCoin(page: Page, name: string, symbol: string, buffer = COIN_PNG) {
-  await toStep(page, "coin");
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer });
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Ticker").fill(symbol);
 }
 
-/** Reviews the launch from wherever the form is: the action is in the summary, the review step on a phone. */
+/** Reviews the launch: the action is in the summary, which turns into the review. */
 async function reviewLaunch(page: Page) {
-  await toStep(page, "review");
   await page.getByRole("button", { name: "Review launch" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
 }
 
-test("launch form, step by step", async ({ page, wallet }) => {
+test("launch form, one page from empty to reviewed", async ({ page, wallet }) => {
   await page.goto("/launch");
   await expect(page.getByRole("heading", { name: "Stoke a coin" })).toBeVisible();
+  // One page on every width (#172): no step index, every section in view, the summary with the action.
+  await expect(page.getByRole("navigation", { name: "Steps" })).toHaveCount(0);
+  for (const section of ["Your coin", "Paired with", "Launch type", "Links", "First buy"])
+    await expect(page.getByRole("region", { name: new RegExp(`^${section}`) })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Launch summary" })).toBeVisible();
   await snap(page, "launch-disconnected.png");
 
-  await toStep(page, "review");
   await openWalletMenu(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await snap(page, "launch-wallet-menu.png");
   await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
@@ -344,19 +341,16 @@ test("launch form, step by step", async ({ page, wallet }) => {
 
   await fillCoin(page, "Tracer Bullet", "TRCR");
   await page.getByLabel("Description").fill("The first coin through the whole system: form, API, wallet, chain, indexer, board.");
-  await toStep(page, "launch");
   await page.getByLabel("Website").fill("https://example.com/tracer");
-  await toStep(page, "coin");
   await copyCheckSettled(page);
   await snap(page, "launch-filled.png");
 
   // The welcome recorded the acceptance for every test; a browser without the record meets the launch disclaimer instead.
   await forgetDisclaimer(page);
-  await toStep(page, "review");
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
-  // A viewport shot: the page behind the modal sits wherever the index's scroll to the sticky summary left it, so pin it.
+  // A viewport shot: the page behind the modal sits wherever the click on the summary's action scrolled it, so pin it.
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page).toHaveScreenshot("launch-disclaimer.png", { mask: dynamic(page) });
   await dialog.getByRole("checkbox").check();
@@ -367,12 +361,9 @@ test("launch form, step by step", async ({ page, wallet }) => {
   expect(wallet.requests).toHaveLength(0);
 });
 
-/**
- * The copy check answers a moment after the fields are filled; a shot waits for its verdicts so it never catches
- * "Checking". The coin step may be hidden on a phone, so this reads the section's attributes, not its visibility.
- */
+/** The copy check answers a moment after the fields are filled; a shot waits for its verdicts so it never catches "Checking". */
 async function copyCheckSettled(page: Page) {
-  const coin = page.locator('section[data-step="coin"]');
+  const coin = page.getByRole("region", { name: "Your coin" });
   await expect(coin).toHaveAttribute("aria-busy", "false");
   await expect(coin.getByText("Checking")).toHaveCount(0);
 }
@@ -397,7 +388,6 @@ async function launchFormWithOptions(page: Page, airdrop: string) {
   await page.goto("/launch");
   await connectOnForm(page);
   await fillCoin(page, "Party Favors", "PARTY");
-  await toStep(page, "launch");
   await page.getByLabel(/^Amount/).fill("0.1");
   await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
   await page.getByLabel("Wallets and amounts").fill(airdrop);
@@ -420,7 +410,6 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its review", a
   await page.goto("/launch");
   await connectOnForm(page);
   await fillCoin(page, "Yield Desk", "YLD");
-  await toStep(page, "launch");
   await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
   await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
   await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();

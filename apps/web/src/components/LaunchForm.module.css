@@ -1,8 +1,9 @@
 /*
- * The launch page (phase 5 of the rework, #136; docs/design/principles.md section 13): the form in eight columns as one
- * surface card in named sections with a sticky step index over it, and the launch summary in four on a raised card that
- * stays in view, holding the one action. Under 768px the steps show one at a time and the summary is the review step.
- * The buttons, chips, tags, the input well and the dialog are the primitives in globals.css; this file only places them.
+ * The launch page (phase 5 of the rework, #136, laid out after new-stoker's launch page, #172; docs/design/principles.md
+ * section 13): one page without steps, the form in eight columns as one surface card in named sections, and the launch
+ * summary in four on a raised card that stays in view, the review holding the one action. Under 960px the summary follows
+ * the form, and a phone scrolls the one page. The buttons, chips, tags, the input well and the dialog are the primitives
+ * in globals.css; this file only places them.
  */
 .page {
   align-items: start;
@@ -33,99 +34,6 @@
   font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
-}
-
-/* The step index: a row across the grid, sticky under the header, the list of four at the form's width on an opaque strip. */
-.steps {
-  position: sticky;
-  top: var(--header-h);
-  z-index: 2;
-  margin: 0;
-  pointer-events: none;
-}
-
-.stepList {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0 -4px;
-  padding: 8px 4px;
-  list-style: none;
-  background: var(--bg);
-  pointer-events: auto;
-}
-
-.stepButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 40px;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--surface);
-  color: var(--ink-2);
-  font: inherit;
-  font-size: var(--text-ui);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
-}
-
-@media (hover: hover) {
-  .stepButton:hover {
-    border-color: var(--line-strong);
-    background: var(--hover);
-  }
-}
-
-.stepButton:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
-.stepButton[aria-current="step"] {
-  border-color: var(--accent);
-  background: var(--plate);
-  color: var(--ink);
-}
-
-/* The step's number in a small disc, which becomes a tick once the step has what it needs. */
-.stepNumber {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--sunken);
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-variant-numeric: tabular-nums;
-}
-
-.stepButton[aria-current="step"] .stepNumber {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-
-.stepItem[data-done] .stepNumber {
-  background: var(--up-bg);
-  color: var(--up);
-}
-
-.tick {
-  display: block;
-  width: 5px;
-  height: 9px;
-  margin-top: -2px;
-  border: solid currentColor;
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
 }
 
 /* The card is the primitive; the fieldset only has to lose its own box. */
@@ -303,10 +211,15 @@
   color: var(--ink-3);
 }
 
+/* new-stoker's grid: two columns, the website across both. */
 .links {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.wide {
+  grid-column: 1 / -1;
 }
 
 /* A link's well: the network's mark at its head in the hint's colour, the address after it. */
@@ -467,6 +380,8 @@
   line-height: 1.45;
   color: var(--ink-3);
   overflow-wrap: anywhere;
+  /* No word alone on the last line: the image's verdict wraps under the 160px well. */
+  text-wrap: pretty;
 }
 
 .check[data-status="taken"] {
@@ -482,18 +397,10 @@
   border-color: color-mix(in oklab, var(--caution) 55%, var(--line));
 }
 
-/* The step's foot: only on a phone, where the steps show one at a time. */
-.stepNav {
-  display: none;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-top: 4px;
-}
-
-/* The summary column: sticky beside the form, under the step index, scrolling within its own height when the window is shorter than it. */
+/* The summary column: sticky beside the form under the header, scrolling within its own height when the window is shorter than it. */
 .side {
   position: sticky;
-  top: calc(var(--header-h) + 64px);
+  top: calc(var(--header-h) + 24px);
   min-width: 0;
 }
 
@@ -502,7 +409,7 @@
 }
 
 .summaryScroll {
-  max-height: calc(100dvh - var(--header-h) - 80px);
+  max-height: calc(100dvh - var(--header-h) - 40px);
   overflow-y: auto;
   scrollbar-width: thin;
   /* Room for the card's shadow and ring. */
@@ -931,43 +838,12 @@
     align-items: center;
     text-align: center;
   }
-  .links {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
-/* A phone: one step a screen, the index sticky under the header, the summary as the review step. */
+/* A phone scrolls the one page: every section in turn, then the summary with the action. */
 @media (max-width: 767px) {
-  .stepList {
-    gap: 4px;
-    margin: 0;
-    padding: 6px 0;
-  }
-  .stepButton {
-    gap: 6px;
-    padding: 0 6px;
-  }
   .block {
-    display: none;
     padding: 18px 16px 20px;
-    border-top: 0;
-  }
-  .page[data-step="coin"] .block[data-step="coin"],
-  .page[data-step="pair"] .block[data-step="pair"],
-  .page[data-step="launch"] .block[data-step="launch"] {
-    display: flex;
-  }
-  .page[data-step="launch"] .block[data-step="launch"] + .block[data-step="launch"] {
-    border-top: 1px solid var(--line);
-  }
-  .side {
-    display: none;
-  }
-  .page[data-step="review"] .side {
-    display: block;
-  }
-  .stepNav {
-    display: flex;
   }
   .facts > div {
     grid-template-columns: minmax(0, 1fr);
@@ -975,8 +851,9 @@
   }
 }
 
-@media (max-width: 480px) {
-  .stepLabel {
-    font-size: var(--text-caption);
+/* One link a row where two would crowd (new-stoker's breakpoint). */
+@media (max-width: 520px) {
+  .links {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

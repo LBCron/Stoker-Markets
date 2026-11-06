@@ -43,23 +43,12 @@ type Step =
 const DESCRIPTION_MAX = 1000;
 
 /**
- * The form's steps (phase 5, #136): on a phone one step a screen, with the summary as the review step; on a desktop a
- * sticky index over the whole form, every section in view and the summary beside it.
- */
-const STEPS = [
-  { id: "coin", label: "Coin" },
-  { id: "pair", label: "Pair" },
-  { id: "launch", label: "Launch" },
-  { id: "review", label: "Review" },
-] as const;
-type StepId = (typeof STEPS)[number]["id"];
-
-/**
- * The launch form, reworked in phase 5 (#136, after the research's section 4 and principle 11): the coin first, with
- * its image at the size it will be seen and a live preview in the summary, the pair as the recommended three plus the
- * full picker, the launch type, the links before the First Buy with the one-line reason, and the summary beside it all
- * with the one action inside it. `initialQuote` is the asset an asset's page sent the Creator here for; the first
- * launchable one otherwise.
+ * The launch form, reworked in phase 5 (#136, after the research's section 4 and principle 11) and laid out after
+ * new-stoker's launch page (#172, owner 2026-11-06): one page without steps on every width, in new-stoker's order (the
+ * coin first, with its image at the size it will be seen and a live preview in the summary, the pair as the recommended
+ * three plus the full picker, the launch type, the links, then the First Buy), and the summary beside it as the review
+ * with the one action inside it; on a phone the summary follows the form. `initialQuote` is the asset an asset's page
+ * sent the Creator here for; the first launchable one otherwise.
  */
 export function LaunchForm({
   platform, quotes, initialQuote = null, initialName = "", initialSymbol = "",
@@ -84,7 +73,6 @@ export function LaunchForm({
     () => quotes.find((q) => q.mint === initialQuote && q.launchable)?.mint ?? quotes.find((q) => q.launchable)?.mint ?? null,
   );
   const [step, setStep] = useState<Step>({ kind: "editing" });
-  const [current, setCurrent] = useState<StepId>("coin");
   const [error, setError] = useState<string | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
@@ -196,29 +184,10 @@ export function LaunchForm({
     void prepare();
   }
 
-  /**
-   * On a phone the step is shown alone; on a desktop every step is in view and the index scrolls to it. The scroll is
-   * instant for a visitor who asked for less motion (and so for the suite's stilled shots, which caught the sticky
-   * summary mid-animation once, 2026-11-02).
-   */
-  function goTo(id: StepId) {
-    setCurrent(id);
-    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
-    document.getElementById(`step-${id}`)?.scrollIntoView({ block: "start", behavior });
-  }
-
   const review = step.kind === "reviewing" || step.kind === "signing" || step.kind === "confirming" ? step.review : null;
   const failed = step.kind === "failed" ? step : step.kind === "preparing" ? (step.retrying ?? null) : null;
 
   const launchable = quotes.filter((q) => q.launchable).length;
-  // A step is done once it has what it needs: the coin its three fields, the pair a launchable asset; the launch step
-  // is optional, so it is done once something on it was chosen and nothing on it is wrong; the review once prepared.
-  const done: Record<StepId, boolean> = {
-    coin: image !== null && name.trim() !== "" && symbol.trim() !== "",
-    pair: Boolean(quote?.launchable),
-    launch: !options.problem && (options.rewardTax !== null || options.firstBuyText.trim() !== "" || LINK_KINDS.some((k) => links[k].trim() !== "")),
-    review: review !== null,
-  };
   const protection = copy.protectionSeconds !== null ? windowWords(copy.protectionSeconds) : null;
 
   const coinHint = (
@@ -229,7 +198,7 @@ export function LaunchForm({
   );
 
   return (
-    <form className={`shell grid ${styles.page}`} onSubmit={onSubmit} aria-busy={busy} data-step={current}>
+    <form className={`shell grid ${styles.page}`} onSubmit={onSubmit} aria-busy={busy}>
       <header className={`col-12 ${styles.head}`}>
         <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
         <p className={styles.lede}>
@@ -238,24 +207,10 @@ export function LaunchForm({
         </p>
       </header>
 
-      {/* The step index: a row of its own across the grid, sticky under the header on every step, the list at the form's width. */}
-      <nav className={`col-12 grid ${styles.steps}`} aria-label="Steps">
-        <ol className={`col-8 ${styles.stepList}`}>
-          {STEPS.map((s, i) => (
-            <li key={s.id} className={styles.stepItem} data-done={done[s.id] || undefined}>
-              <button type="button" className={styles.stepButton} aria-current={current === s.id ? "step" : undefined} onClick={() => goTo(s.id)}>
-                <span className={styles.stepNumber} aria-hidden>{done[s.id] && current !== s.id ? <Tick /> : i + 1}</span>
-                <span className={styles.stepLabel}>{s.label}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
-      </nav>
-
       <div className={`col-8 ${styles.main}`}>
         <fieldset className={`card ${styles.card}`} disabled={busy}>
           {/* 1. The coin: its image at the size the site shows it, the name and the ticker, each checked for a copy as it is typed. */}
-          <section id="step-coin" className={styles.block} data-step="coin" aria-labelledby="block-coin" aria-busy={copy.pending}>
+          <section className={styles.block} aria-labelledby="block-coin" aria-busy={copy.pending}>
             <SectionHead id="block-coin" title="Your coin" hint={coinHint} />
             <div className={styles.coinRow}>
               <div className={styles.dropCell}>
@@ -299,34 +254,33 @@ export function LaunchForm({
               <textarea id="coin-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={DESCRIPTION_MAX} rows={3} />
               <small className={styles.counter} aria-hidden>{description.length} / {DESCRIPTION_MAX}</small>
             </div>
-            <StepNav next="pair" onGo={goTo} />
           </section>
 
           {/* 2. The pair: the recommended three and the way to the rest. */}
-          <section id="step-pair" className={styles.block} data-step="pair" aria-labelledby="block-pair">
+          <section className={styles.block} aria-labelledby="block-pair">
             <SectionHead id="block-pair" title="Paired with" hint="The asset your coin is priced and traded in. Every trade pays in it, and so does your share." />
             <QuoteChooser quotes={quotes} value={quoteMint} onChange={setQuoteMint} />
-            <StepNav back="coin" next="launch" onGo={goTo} />
           </section>
 
           {/* 3. How it launches: the type, the links before the First Buy, then the First Buy itself. */}
-          <section id="step-launch" className={styles.block} data-step="launch" aria-labelledby="block-type">
+          <section className={styles.block} aria-labelledby="block-type">
             <SectionHead id="block-type" title="Launch type" hint="A standard coin, or a Reward Launch that withholds a tax on every transfer and pays it to the coin's holders." />
             <LaunchType options={options} coin={symbol} labelId="block-type" />
           </section>
-          <section className={styles.block} data-step="launch" aria-labelledby="block-links">
+          <section className={styles.block} aria-labelledby="block-links">
             <SectionHead
               id="block-links"
               title="Links"
               optional
               hint="Coins with a Telegram graduated nine times as often as those without, in a study of 832,941 launches. Saved in the coin's permanent metadata and shown on its page."
             />
+            {/* new-stoker's grid: Telegram and X side by side, the website across both, the rest two by two. */}
             <div className={styles.links}>
               {FIRST_LINKS.map((k) => (
-                <LinkField key={k} kind={k} value={links[k]} onChange={(v) => setLinks((l) => ({ ...l, [k]: v }))} />
+                <LinkField key={k} kind={k} value={links[k]} onChange={(v) => setLinks((l) => ({ ...l, [k]: v }))} wide={k === "website"} />
               ))}
             </div>
-            {/* The rest wait behind one button, so the step stays short for the coin that has only a Telegram. */}
+            {/* The rest wait behind one button, so the section stays short for the coin that has only a Telegram. */}
             {moreLinks || MORE_LINKS.some((k) => links[k].trim() !== "") ? (
               <div className={styles.links}>
                 {MORE_LINKS.map((k) => (
@@ -339,16 +293,15 @@ export function LaunchForm({
               </button>
             )}
           </section>
-          <section className={styles.block} data-step="launch" aria-labelledby="block-options">
+          <section className={styles.block} aria-labelledby="block-options">
             <SectionHead id="block-options" title="First buy" optional hint="Your own buy inside the launch transaction itself, so nobody can buy before you; for allowed creators, an airdrop paid from it." />
             <LaunchOptions options={options} coin={symbol} />
-            <StepNav back="pair" next="review" onGo={goTo} />
           </section>
         </fieldset>
       </div>
 
-      {/* The summary: what the coin is and the terms it launches on, with the one action inside it; the review step on a phone. */}
-      <aside id="step-review" className={`col-4 ${styles.side}`} aria-label="Launch summary">
+      {/* The summary: what the coin is and the terms it launches on, then the review with the one action; after the form on a phone. */}
+      <aside className={`col-4 ${styles.side}`} aria-label="Launch summary">
         <Summary
           platform={platform}
           quote={quote}
@@ -366,7 +319,6 @@ export function LaunchForm({
           onEdit={() => { setError(null); setStep({ kind: "editing" }); }}
           onRetry={() => failed && retry(failed)}
           onSign={() => review && signAndLaunch(review)}
-          onBack={() => goTo("launch")}
         />
       </aside>
 
@@ -382,11 +334,6 @@ export function LaunchForm({
   );
 }
 
-/** A tick drawn from two borders, for a done step. */
-function Tick() {
-  return <span className={styles.tick} />;
-}
-
 /** A section's head: its title (the section's accessible name) and a line of hint. */
 function SectionHead({ id, title, hint, optional = false }: { id: string; title: string; hint: ReactNode; optional?: boolean }) {
   return (
@@ -400,22 +347,11 @@ function SectionHead({ id, title, hint, optional = false }: { id: string; title:
   );
 }
 
-/** The step's foot on a phone: back, and on to the next step. On a desktop every step is in view and this is not shown. */
-function StepNav({ back, next, onGo }: { back?: StepId; next: StepId; onGo: (id: StepId) => void }) {
-  const label = STEPS.find((s) => s.id === next)!.label;
-  return (
-    <div className={styles.stepNav}>
-      {back && <button type="button" className="button button-ghost" onClick={() => onGo(back)}>Back</button>}
-      <button type="button" className="button button-primary" onClick={() => onGo(next)}>Next: {label}</button>
-    </div>
-  );
-}
-
-/** One link's field: the network's mark at the head of the well, the address after it. */
-function LinkField({ kind, value, onChange }: { kind: LinkKind; value: string; onChange: (value: string) => void }) {
+/** One link's field: the network's mark at the head of the well, the address after it; `wide` spans the grid's row. */
+function LinkField({ kind, value, onChange, wide = false }: { kind: LinkKind; value: string; onChange: (value: string) => void; wide?: boolean }) {
   const info = LINK_INFO[kind];
   return (
-    <div className={styles.field}>
+    <div className={`${styles.field} ${wide ? styles.wide : ""}`}>
       <label htmlFor={`coin-${kind}`}>{info.label}</label>
       <span className={`input ${styles.linkWell}`}>
         <LinkIcon kind={kind} size={16} className={styles.linkMark} />
@@ -481,7 +417,6 @@ type SummaryProps = {
   onEdit: () => void;
   onRetry: () => void;
   onSign: () => void;
-  onBack: () => void;
 };
 
 /**
@@ -491,7 +426,7 @@ type SummaryProps = {
  * first buy gets, then the signing step, styled like nothing else on the page, and the status while the launch lands.
  */
 function Summary({
-  platform, quote, symbol, name, imageUrl, options, links, review, step, failed, error, connected, walletName, onEdit, onRetry, onSign, onBack,
+  platform, quote, symbol, name, imageUrl, options, links, review, step, failed, error, connected, walletName, onEdit, onRetry, onSign,
 }: SummaryProps) {
   const ticker = quote ? quoteTicker(quote) : null;
   const scroller = useRef<HTMLDivElement>(null);
@@ -559,14 +494,14 @@ function Summary({
               </dd>
             </div>
             <div>
-              <dt>Graduates at</dt>
-              <dd>{quote ? <GraduationTerms quote={quote} /> : "Choose a Quote Asset to see what your coin must raise."}</dd>
-            </div>
-            <div>
               <dt>Supply</dt>
               <dd>
                 <span className="mono">{COIN_SUPPLY.toLocaleString("en-US")}</span> {symbol || "coins"}, fixed
               </dd>
+            </div>
+            <div>
+              <dt>Graduates at</dt>
+              <dd>{quote ? <GraduationTerms quote={quote} /> : "Choose a Quote Asset to see what your coin must raise."}</dd>
             </div>
             <div>
               <dt>Launch type</dt>
@@ -735,9 +670,6 @@ function Summary({
               What you earn is approximate and depends on trading that may never happen. A coin can lose all of its value, and nothing
               here is investment advice.
             </p>
-            <div className={styles.stepNav}>
-              <button type="button" className="button button-ghost" onClick={onBack} disabled={step.kind !== "editing"}>Back</button>
-            </div>
           </div>
         </div>
       </div>
