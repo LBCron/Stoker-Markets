@@ -8,8 +8,8 @@ import {
   QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
-import { chooseQuote, signButton } from "./launchPage";
-import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
+import { chooseQuote, firstBuyField, signButton, signing, summary } from "./launchPage";
+import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME, type TestWallet } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
 // visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
@@ -309,7 +309,12 @@ test("coin not found", async ({ page }) => {
 /** The wallet prompt sits in the summary: beside the form on a desktop, after it on a phone (one page, #172). */
 async function connectOnForm(page: Page) {
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await expect(signButton(page)).toBeVisible();
+}
+
+/** The preview card's price comes from a launch quote a moment after the pair is known; a shot waits for it, never a dash. */
+async function previewPriced(page: Page) {
+  await expect(page.getByRole("region", { name: "Preview" }).locator(".price")).toBeVisible();
 }
 
 async function fillCoin(page: Page, name: string, symbol: string, buffer = COIN_PNG) {
@@ -318,26 +323,39 @@ async function fillCoin(page: Page, name: string, symbol: string, buffer = COIN_
   await page.getByLabel("Ticker").fill(symbol);
 }
 
-/** Reviews the launch: the action is in the summary, which turns into the review. */
-async function reviewLaunch(page: Page) {
-  await page.getByRole("button", { name: "Review launch" }).click();
-  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
+/**
+ * Starts the launch and holds the wallet's answer, so the summary shows its signing panel with what the wallet pays;
+ * `end` then declines and lets the wallet answer, so nothing launches.
+ */
+async function holdAtSigning(page: Page, wallet: TestWallet) {
+  const held = wallet.holdNext();
+  await signButton(page).click();
+  await expect(signing(page)).toBeVisible();
+  return {
+    end: async () => {
+      wallet.declineNext();
+      held.release();
+      await expect(page.getByRole("main").getByRole("alert")).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
+    },
+  };
 }
 
-test("launch form, one page from empty to reviewed", async ({ page, wallet }) => {
+test("launch form, one page from empty to signing", async ({ page, wallet }) => {
   await page.goto("/launch");
   await expect(page.getByRole("heading", { name: "Stoke a coin" })).toBeVisible();
   // One page on every width (#172): no step index, every section in view, the summary with the action.
   await expect(page.getByRole("navigation", { name: "Steps" })).toHaveCount(0);
   for (const section of ["Your coin", "Paired with", "Launch type", "Links", "First buy"])
     await expect(page.getByRole("region", { name: new RegExp(`^${section}`) })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "Launch summary" })).toBeVisible();
+  await expect(summary(page)).toBeVisible();
+  await expect(page.getByRole("region", { name: "Preview" })).toBeVisible();
+  await previewPriced(page);
   await snap(page, "launch-disconnected.png");
 
   await openWalletMenu(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await snap(page, "launch-wallet-menu.png");
   await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await expect(signButton(page)).toBeVisible();
 
   await fillCoin(page, "Tracer Bullet", "TRCR");
   await page.getByLabel("Description").fill("The first coin through the whole system: form, API, wallet, chain, indexer, board.");
@@ -347,18 +365,22 @@ test("launch form, one page from empty to reviewed", async ({ page, wallet }) =>
 
   // The welcome recorded the acceptance for every test; a browser without the record meets the launch disclaimer instead.
   await forgetDisclaimer(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
   // A viewport shot: the page behind the modal sits wherever the click on the summary's action scrolled it, so pin it.
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page).toHaveScreenshot("launch-disclaimer.png", { mask: dynamic(page) });
   await dialog.getByRole("checkbox").check();
+  const held = wallet.holdNext();
   await dialog.getByRole("button", { name: "Continue" }).click();
 
-  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
-  await snap(page, "launch-review.png");
-  expect(wallet.requests).toHaveLength(0);
+  await expect(signing(page)).toBeVisible();
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-signing.png");
+  wallet.declineNext();
+  held.release();
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
 });
 
 /** The copy check answers a moment after the fields are filled; a shot waits for its verdicts so it never catches "Checking". */
@@ -368,18 +390,20 @@ async function copyCheckSettled(page: Page) {
   await expect(coin.getByText("Checking")).toHaveCount(0);
 }
 
-test("launch review against a tokenized stock", async ({ page, wallet }) => {
+test("launch against a tokenized stock, and its signing", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectOnForm(page);
   await fillCoin(page, "Chipmaker Pair", "CHPX");
   await chooseQuote(page, "NVDAx");
   await copyCheckSettled(page);
+  await expect(summary(page)).toContainText("0.8333 NVDAx raised");
+  await previewPriced(page);
   await snap(page, "launch-filled-stock.png");
 
-  await reviewLaunch(page);
-  await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("0.83333333 NVDAx");
-  await snap(page, "launch-review-stock.png");
-  expect(wallet.requests).toHaveLength(0);
+  const launch = await holdAtSigning(page, wallet);
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-signing-stock.png");
+  await launch.end();
 });
 
 const OPTION_WALLETS = [1, 2, 3].map((n) => fixedKeypair(`options wallet ${n}`).publicKey.toBase58());
@@ -388,7 +412,7 @@ async function launchFormWithOptions(page: Page, airdrop: string) {
   await page.goto("/launch");
   await connectOnForm(page);
   await fillCoin(page, "Party Favors", "PARTY");
-  await page.getByLabel(/^Amount/).fill("0.1");
+  await firstBuyField(page).fill("0.1");
   await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
   await page.getByLabel("Wallets and amounts").fill(airdrop);
 }
@@ -396,31 +420,34 @@ async function launchFormWithOptions(page: Page, airdrop: string) {
 test("launch form with a first buy and an airdrop", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, OPTION_WALLETS.map((w, i) => `${w}, ${(i + 1) * 250_000}`).join("\n"));
-  await expect(page.getByText(/^You get/)).toBeVisible();
+  await expect(summary(page)).toContainText("You get");
   await expect(page.getByText(/^3 wallets get/)).toBeVisible();
   await copyCheckSettled(page);
+  await previewPriced(page);
   await snap(page, "launch-options.png");
 
-  await reviewLaunch(page);
-  await snap(page, "launch-review-options.png");
-  expect(wallet.requests).toHaveLength(0);
+  const launch = await holdAtSigning(page, wallet);
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-signing-options.png");
+  await launch.end();
 });
 
-test("launch form as a Reward Launch paid in the Quote Asset, and its review", async ({ page, wallet }) => {
+test("launch form as a Reward Launch paid in the Quote Asset, and its signing", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectOnForm(page);
   await fillCoin(page, "Yield Desk", "YLD");
-  await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
+  await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: "Reward Launch, paid in SOL" }).check();
   await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
   await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();
   await copyCheckSettled(page);
+  await previewPriced(page);
   await page.mouse.move(0, 0);
   await snap(page, "launch-reward.png");
 
-  await reviewLaunch(page);
-  await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("It is sold for SOL in small slices and paid out in SOL.");
-  await snap(page, "launch-review-reward.png");
-  expect(wallet.requests).toHaveLength(0);
+  const launch = await holdAtSigning(page, wallet);
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-signing-reward.png");
+  await launch.end();
 });
 
 test("launch form with a mistake in the airdrop list", async ({ page, wallet }) => {
@@ -434,10 +461,15 @@ test("launch form with a mistake in the airdrop list", async ({ page, wallet }) 
 test("launch the network refused", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000`).join("\n"));
-  await reviewLaunch(page);
-  await drain(wallet.keypair, 0.01);
+  await expect(summary(page)).toContainText("You get");
+  const held = wallet.holdNext();
   await signButton(page).click();
+  await expect(signing(page)).toBeVisible();
+  await drain(wallet.keypair, 0.01);
+  held.release();
   await expect(page.getByRole("region", { name: "Launch not confirmed" })).toBeVisible();
+  await previewPriced(page);
+  await page.mouse.move(0, 0);
   await snap(page, "launch-failed.png");
 });
 

@@ -16,7 +16,7 @@ const MORE_LINK_LABELS = { discord: "Discord", tiktok: "TikTok", instagram: "Ins
 
 export async function connectWallet(page: Page) {
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await expect(signButton(page)).toBeVisible();
 }
 
 /** Fills the links, by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words. */
@@ -47,14 +47,14 @@ export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
 
 /** Sets the launch options: a First Buy in SOL, and an Airdrop list as the Creator would type it. */
 export async function fillOptions(page: Page, o: { firstBuy?: string; airdrop?: string }) {
-  if (o.firstBuy !== undefined) await page.getByLabel(/^Amount/).fill(o.firstBuy);
+  if (o.firstBuy !== undefined) await firstBuyField(page).fill(o.firstBuy);
   if (o.airdrop !== undefined) {
     await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
     await page.getByLabel("Wallets and amounts").fill(o.airdrop);
   }
 }
 
-/** Opens the full picker from the pair's fourth cell, which names the asset chosen from it once there is one. */
+/** Opens the full picker from the "Any other asset" field, which names the asset chosen from it once there is one. */
 export async function openPicker(page: Page) {
   await page.getByRole("button", { name: /Choose another Quote Asset/ }).click();
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeVisible();
@@ -71,19 +71,31 @@ export async function chooseQuote(page: Page, ticker: string) {
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
 }
 
-/** The asset the form has chosen: checked among the recommended three, or named by the fourth cell when it came from the picker. */
+/** The recommended three, as rows under the section's heading. */
+export const pairRows = (page: Page) => page.getByRole("radiogroup", { name: "Paired with" });
+
+/** The asset the form has chosen: checked among the recommended three, or named by the "Any other asset" field when it came from the picker. */
 export async function expectChosen(page: Page, ticker: string) {
-  const recommended = page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
+  const recommended = pairRows(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
   if ((await recommended.count()) > 0) await expect(recommended).toBeChecked();
-  else await expect(page.getByRole("button", { name: `${ticker} chosen. Choose another Quote Asset` })).toHaveAttribute("aria-pressed", "true");
+  else await expect(page.getByRole("button", { name: `${ticker} chosen. Choose another Quote Asset` })).toBeVisible();
 }
 
-/** The one action once the launch is reviewed: "Stoke TRCR for 0.0213 SOL", the exact cost from the simulation. */
-export const signButton = (page: Page) => review(page).getByRole("button", { name: /^Stoke \S+ for / });
+export const firstBuyField = (page: Page) => page.getByRole("textbox", { name: "First buy" });
+export const summary = (page: Page) => page.getByRole("complementary", { name: "Launch summary" });
+/** The one action (#172): "Stoke TRCR" prepares, simulates and asks the wallet to sign. */
+export const signButton = (page: Page) => summary(page).getByRole("button", { name: /^Stoke / });
+/** The signing panel while the wallet asks, with what the wallet pays from the simulation. */
+export const signing = (page: Page) => summary(page).getByRole("status").filter({ hasText: "Confirm in" });
+
+/** The simulated cost in SOL the signing panel shows. */
+export async function signingCost(page: Page) {
+  const text = await signing(page).locator("dd.mono").first().textContent();
+  return Number(text?.replace(" SOL", ""));
+}
 
 export const disclaimer = (page: Page) => page.getByRole("dialog", { name: "Before you launch" });
 export const formAlert = (page: Page) => page.getByRole("main").getByRole("alert");
-export const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
 export const notConfirmed = (page: Page) => page.getByRole("region", { name: "Launch not confirmed" });
 
 export async function acceptDisclaimer(page: Page) {
