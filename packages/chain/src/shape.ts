@@ -1,18 +1,33 @@
 import BN from "bn.js";
 
 /**
- * The launch shape every Launch on our platform has, pinned on-chain by our curve rules.
- * Supply 1B at 6 decimals, 793.1M sold on a constant-product curve, migration to CPMM, no vesting,
- * CPMM creator fee on the quote side.
+ * The launch shape every new Launch on our platform has, pinned on-chain by our curve rules (ADR 0005).
+ * Supply 1T at 6 decimals (owner, 2026-11-02, #166), 793.1B sold on a constant-product curve, migration to CPMM, no
+ * vesting, CPMM creator fee on the quote side. The share sold is the 1B shape's, so a Graduation Target raises the same
+ * amount and a coin's market cap is the same figure; only the count of coins, and so the price of one, differs.
  */
 export const LAUNCH_SHAPE = {
   decimals: 6,
-  supply: new BN("1000000000000000"),
-  totalBaseSell: new BN("793100000000000"),
+  supply: new BN("1000000000000000000"),
+  totalBaseSell: new BN("793100000000000000"),
   migrateType: 1, // CPMM
   curveType: 0, // constant product
   ammFeeOn: "QuoteToken" as const,
 };
+
+/**
+ * The supplies and sales coins launched before the current shape have: 1B at 6 decimals with 793.1M sold, every coin
+ * until #166. The curve rules pin only LAUNCH_SHAPE, so no new coin can launch on one of these, but a coin that did
+ * keeps its shape for good, and the Indexer still takes its launch as ours (a webhook redelivery, a history backfill,
+ * a launch prepared before the Quote Registry rewrote the rules).
+ */
+export const EARLIER_LAUNCH_SHAPES = [
+  { supply: new BN("1000000000000000"), totalBaseSell: new BN("793100000000000") },
+] as const;
+
+/** Whether a launch's supply and sale, raw units, are the current launch shape's or one an earlier coin has. */
+export const isOurSupplyAndSale = (supply: BN, totalBaseSell: BN) =>
+  [LAUNCH_SHAPE, ...EARLIER_LAUNCH_SHAPES].some((s) => supply.eq(s.supply) && totalBaseSell.eq(s.totalBaseSell));
 
 /** Rates use LaunchLab's 1e6 denominator: 5_000 is 0.5%. */
 export const RATE_DENOMINATOR = 1_000_000;
@@ -79,6 +94,16 @@ export function closedLaunchConstraints(): RuleConstraint[] {
     { field: RuleField.TotalFundRaisingB, op: RuleOp.Gte, value: new BN(1) },
     { field: RuleField.TotalFundRaisingB, op: RuleOp.Lte, value: new BN(0) },
   ];
+}
+
+/**
+ * Whether a group of constraints pins the current launch shape's supply and sale. A group written before #166 pins the
+ * 1B shape, which LaunchLab then holds every new launch to, so a launch built on LAUNCH_SHAPE would fail with 6025 until
+ * the Quote Registry rewrites the group.
+ */
+export function pinsLaunchShape(constraints: RuleConstraint[]) {
+  const pins = (field: number, value: BN) => constraints.some((c) => c.field === field && c.op === RuleOp.Eq && c.value.eq(value));
+  return pins(RuleField.Supply, LAUNCH_SHAPE.supply) && pins(RuleField.TotalSellA, LAUNCH_SHAPE.totalBaseSell);
 }
 
 /** The Graduation Target band a group of constraints allows, or null when it allows none (a closed group). */

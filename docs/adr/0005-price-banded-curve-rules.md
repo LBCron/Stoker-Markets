@@ -1,6 +1,6 @@
 # Price-banded curve rules, managed by the hot operations wallet
 
-Status: accepted by the owner on 2026-10-04 (#23), after the devnet rehearsal ran on it; amended 2026-10-24 (owner): a band moves at 5% of drift, not 2.5%.
+Status: accepted by the owner on 2026-10-04 (#23), after the devnet rehearsal ran on it; amended 2026-10-24 (owner): a band moves at 5% of drift, not 2.5%; amended 2026-11-07 (#166, owner's ask of 2026-11-02): the shape the rules pin is 1T coins.
 
 A Graduation Target is fixed at launch as 85 SOL-equivalent in the Quote Asset's raw units, so for anything but SOL it depends on a price the chain cannot see.
 LaunchLab curve rules compare launch parameters with constants, so an exact on-chain pin of `TotalFundRaisingB` only works for SOL.
@@ -16,6 +16,15 @@ So the refresh gives every GlobalConfig a rule: a band when the Quote Asset has 
 
 Rule writes are signed by the hot operations wallet, which the cold admin key names as the PlatformConfig's `curve_rule_manager` once at setup.
 The admin key stays offline (ADR 0004); moving bands every few minutes with a hardware wallet or multisig is not practical.
+
+## The launch shape is part of every rule (#166)
+
+Every group pins the whole launch shape exactly, not only the target: the supply, the coins sold on the curve, the curve and migration types, no vesting, and the coin's token program.
+Since #166 (the owner, 2026-11-02: "All coins will have a supply of 1 trillion") the shape is a supply of 1,000,000,000,000 coins at 6 decimals with 793,100,000,000 sold on the curve (`LAUNCH_SHAPE` in `packages/chain/src/shape.ts`), the same 79.31% sold as the 1B shape before it, so a Graduation Target raises what it did and a coin's market cap is the same figure; only the price of one coin is a thousandth of what it was.
+A rule pins one shape per Quote Asset at a time, so a shape change is a rewrite of every rule: the first refresh after the API with the new shape is deployed finds each priced Quote Asset's two groups pinning the old shape and rewrites them, one transaction each, at most `QUOTE_RULE_WRITES_MAX` a run (120 on mainnet, so its 585 launchable assets take five runs, about 25 minutes, or five runs by hand).
+Until its groups are rewritten a Quote Asset accepts only the old shape on-chain, so the API reads such a group as no band at all: the asset shows as not launchable and a launch against it is refused with "open once its launch rules are set on-chain" rather than failing on-chain with 6025.
+A coin launched on an earlier shape keeps it for good: the Indexer still takes a launch with the supply and sale of an earlier shape (`EARLIER_LAUNCH_SHAPES`) as ours, and every figure the API divides by a supply (market caps, holder and trust shares) reads the coin's own, so two kinds of coins can sit on one board.
+The mainnet API listed no launch on 2026-11-07, so if the new shape is deployed before go-live every mainnet coin has it; the devnet rehearsal's coins keep the 1B shape.
 
 ## Considered Options
 

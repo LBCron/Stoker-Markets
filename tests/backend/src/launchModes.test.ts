@@ -78,7 +78,7 @@ describe("a first buy", () => {
     // The board's market figures count it like any trade: the price it left, and its SOL as the day's volume.
     const { market } = (await getLaunch(prepared.mint)).launch!;
     expect(market.price).toBe(quote.firstBuy.priceAfter);
-    expect(market.marketCap?.quote).toBeCloseTo(quote.firstBuy.priceAfter * 1_000_000_000, 6);
+    expect(market.marketCap?.quote).toBeCloseTo(quote.firstBuy.priceAfter * 1_000_000_000_000, 6);
     expect(market.volume24h.raw).toBe(quote.firstBuy.amountIn);
     // The creator page counts half of its Platform Fee as the Creator's, like any other trade's.
     const share = (BigInt(quote.firstBuy.fees.platform) / 2n).toString();
