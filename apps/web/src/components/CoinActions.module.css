@@ -1,0 +1,55 @@
+/* Two small controls above the row's or card's link: the "CA" chip copies the address, the square opens the explorer. */
+.actions {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ca,
+.explorer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+}
+
+.ca {
+  gap: 5px;
+  padding: 0 9px;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ca[data-copied] {
+  color: var(--up);
+  border-color: var(--up);
+}
+
+.explorer {
+  width: 26px;
+}
+
+@media (hover: hover) {
+  .ca:hover,
+  .explorer:hover {
+    border-color: var(--line-strong);
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+
+.ca:focus-visible,
+.explorer:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}

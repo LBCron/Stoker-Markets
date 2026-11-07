@@ -1,4 +1,5 @@
 import type { LaunchSummary } from "@launchpad/contract";
+import type { ExplorerCluster } from "./CoinActions";
 import { COLUMNS, CoinRow } from "./CoinRow";
 import styles from "./CoinTable.module.css";
 
@@ -8,9 +9,10 @@ import styles from "./CoinTable.module.css";
  * listed. `label` names the list for assistive technology and the tests; `busy` dims the rows while a new answer is
  * on its way.
  */
-export function CoinTable({ launches, now, label = "Coins", busy = false }: {
+export function CoinTable({ launches, now, platform, label = "Coins", busy = false }: {
   launches: LaunchSummary[];
   now: number;
+  platform: ExplorerCluster;
   label?: string;
   busy?: boolean;
 }) {
@@ -25,7 +27,7 @@ export function CoinTable({ launches, now, label = "Coins", busy = false }: {
       <ul className={styles.rows} aria-busy={busy} aria-label={label}>
         {launches.map((l) => (
           <li key={l.mint}>
-            <CoinRow launch={l} now={now} />
+            <CoinRow launch={l} now={now} platform={platform} />
           </li>
         ))}
       </ul>

@@ -6,11 +6,12 @@ import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
 import {
   BOARD_VIEW_COOKIE, BOARD_VIEWS, boardViewSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_FACTS, SORT_LABELS, SORT_ORDER, VIEW_LABELS,
-  type BoardView, type CardCandidate, type PairedChip,
+  type BoardView, type PairedChip,
 } from "@/lib/board";
 import { timeAgo } from "@/lib/format";
 import { SEARCH_HASH } from "@/lib/search";
 import { AssetBar } from "./AssetBar";
+import type { ExplorerCluster } from "./CoinActions";
 import { CoinGrid } from "./CoinGrid";
 import { CoinTable } from "./CoinTable";
 import { EmptyState } from "./EmptyState";
@@ -39,13 +40,14 @@ const sameQuery = (a: BoardQuery, b: BoardQuery) =>
  * by the toggle beside the sorts; the choice is the visitor's cookie and the address's `?view=` (src/lib/board.ts).
  */
 export function Board({
-  initial, initialMore, initialQuery, initialView, card, quotes: initialQuotes, renderedAt,
+  initial, initialMore, initialQuery, initialView, platform, quotes: initialQuotes, renderedAt,
 }: {
   initial: LaunchSummary[];
   initialMore: boolean;
   initialQuery: BoardQuery;
   initialView: BoardView;
-  card: CardCandidate;
+  /** Where the rows' and cards' explorer links point. */
+  platform: ExplorerCluster;
   quotes: LaunchQuote[];
   renderedAt: number;
 }) {
@@ -77,9 +79,9 @@ export function Board({
   // from here opens in the same shape.
   useEffect(() => {
     if (initialView === "cards" && !new URLSearchParams(window.location.search).has("view")) {
-      window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, "cards", card)}${window.location.hash}`);
+      window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, "cards")}${window.location.hash}`);
     }
-  }, [initialView, card]);
+  }, [initialView]);
 
   const load = useCallback(async (q: BoardQuery) => {
     try {
@@ -113,7 +115,7 @@ export function Board({
   function change(next: BoardQuery) {
     latest.current = next;
     setQuery(next);
-    window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(next, viewRef.current, card)}`);
+    window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(next, viewRef.current)}`);
     void load(next);
   }
 
@@ -123,7 +125,7 @@ export function Board({
     viewRef.current = next;
     setView(next);
     document.cookie = `${BOARD_VIEW_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, next, card)}`);
+    window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, next)}`);
     if (next === "cards" && launches.some((l) => l.sparkline === undefined)) void load(latest.current);
   }
 
@@ -169,9 +171,9 @@ export function Board({
       {shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}
     </EmptyState>
   ) : view === "cards" ? (
-    <CoinGrid launches={launches} now={now} busy={loading} variant={card} />
+    <CoinGrid launches={launches} now={now} platform={platform} busy={loading} />
   ) : (
-    <CoinTable launches={launches} now={now} busy={loading} />
+    <CoinTable launches={launches} now={now} platform={platform} busy={loading} />
   );
 
   return (

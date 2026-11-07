@@ -75,7 +75,8 @@ test("an asset's page has its facts, the coins priced in it, further information
 
   // The coins already priced in it, largest market cap first, as the board's own rows: each a link to its page with the board's figures.
   const coins = page.getByRole("list", { name: "Coins paired with NVDAx" });
-  const chip = coins.getByRole("link").filter({ hasText: "CHIPX" });
+  const chip = coins.getByRole("listitem").filter({ hasText: "CHIPX" });
+  await expect(chip.getByRole("link", { name: /CHIPX/ })).toHaveAttribute("href", /^\/coin\//);
   await expect(chip).toContainText("Chip Pair");
   await expect(chip.locator("[data-label='Holders']")).toHaveText("0");
 

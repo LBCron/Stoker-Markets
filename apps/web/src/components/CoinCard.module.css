@@ -1,16 +1,19 @@
 /*
-  One coin as a card (#161). The card is the link: the surface card with a hover tint and the focus ring inset. Every
-  card in a row is the same height (the grid stretches them), and the parts sit in the same places on every card, so
-  the eye reads only the differences. Figures are the mono; the name beside the pair is a word.
+  One coin as a card (#161). The coin's link is stretched over the card, with the copy and explorer controls above it;
+  the paired asset's logo is drawn large and faint behind the right side. Every card in a row is the same height (the
+  grid stretches them), and the parts sit in the same places on every card, so the eye reads only the differences.
+  Figures are the mono; the name beside the pair is a word.
 */
 .card {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
   padding: 16px;
+  overflow: hidden;
   color: var(--ink);
-  text-decoration: none;
   transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
@@ -21,12 +24,44 @@
   }
 }
 
-.card:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--accent);
+/*
+  The paired asset behind the figures: a 176px disc cut by the card's right edge, faint, fading out toward the text. The
+  box stops at the card's edge (132px of the disc's 176px) and the disc is cut from it by clip-path, so no box runs past
+  the card and none past a phone's viewport (the suite's overflow check counts clipped boxes too).
+*/
+.art {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: 0;
+  width: 132px;
+  height: 176px;
+  transform: translateY(-46%);
+  object-fit: cover;
+  object-position: left center;
+  clip-path: circle(88px at 88px 50%);
+  background: var(--plate);
+  opacity: 0.2;
+  pointer-events: none;
+  mask-image: linear-gradient(to right, transparent 0%, #000 55%);
 }
 
-/* The coin: its image, then the pair over the name; in A the age at the far end. */
+/* An asset without a logo: its ticker's first letter, centred on the disc. */
+.artLetter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+  width: 88px;
+  padding-left: 44px;
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-strong);
+}
+
+/* The coin: its picture, then the pair over the name, then the controls at the far end. */
 .top {
   display: flex;
   align-items: center;
@@ -41,12 +76,35 @@
   background: var(--sunken);
 }
 
+/* The coin's link, stretched over the whole card. */
 .title {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card);
+}
+
+.title:focus-visible {
+  outline: none;
+}
+
+.title:focus-visible::after {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.actions {
+  flex: none;
+  align-self: flex-start;
 }
 
 .pairBox {
@@ -95,16 +153,32 @@
   color: var(--ink-3);
 }
 
-/* The price in the Quote Asset with the day's change beside it. */
+/* The headline and the day's line beside it, word-sized, level with the figure. */
+.headline {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* The price with the day's change. */
 .price {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 10px;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums slashed-zero;
   color: var(--ink-2);
+}
+
+.spark {
+  flex: none;
+  width: 88px;
+  height: 28px;
+  margin-top: 2px;
 }
 
 .none {
@@ -173,7 +247,7 @@
   font-weight: 500;
 }
 
-/* The facts under a hairline: what the coin is paired with, and its volume (and in B and C its age). */
+/* Under a hairline: what the coin is paired with on the left, its volume and its age on the right. */
 .foot {
   display: flex;
   flex-wrap: wrap;
@@ -198,6 +272,12 @@
   color: var(--ink-3);
 }
 
+.facts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
 .fact {
   font-family: var(--font-mono);
   font-size: var(--text-caption);
@@ -212,71 +292,4 @@
 
 .age {
   color: var(--ink-3);
-}
-
-.a .top .age {
-  flex: none;
-  align-self: flex-start;
-}
-
-/* B, compact: the headline and the price on the left, the line beside them. */
-.b {
-  gap: 12px;
-}
-
-.bMiddle {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
-  align-items: end;
-  gap: 12px;
-}
-
-.bFigures {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.b .capValue {
-  font-size: var(--text-h3);
-}
-
-.bSpark {
-  height: 44px;
-}
-
-/* C, picture-led: the image large on the left with the coin beside it. */
-.cTop {
-  display: flex;
-  align-items: stretch;
-  gap: 14px;
-  min-width: 0;
-}
-
-.cSide {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
-}
-
-.c .capValue {
-  font-size: var(--text-h3);
-}
-
-.c .cap {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.c .foot .curve {
-  flex: 1 1 140px;
-}
-
-.c > .paired {
-  margin-top: -4px;
 }

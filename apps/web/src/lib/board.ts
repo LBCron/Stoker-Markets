@@ -130,22 +130,10 @@ export function boardViewFrom(param: string | string[] | undefined, cookie: stri
   return isView(cookie) ? cookie : "table";
 }
 
-/**
- * The card candidates (#161) behind `?card=`, for the owner to pick from by elimination on the running site; A is the
- * default, and the switch goes after the pick.
- */
-export const CARD_CANDIDATES = ["a", "b", "c"] as const;
-export type CardCandidate = (typeof CARD_CANDIDATES)[number];
-export function cardCandidateFrom(param: string | string[] | undefined): CardCandidate {
-  const v = Array.isArray(param) ? param[0] : param;
-  return (CARD_CANDIDATES as readonly string[]).includes(v ?? "") ? (v as CardCandidate) : "a";
-}
-
-/** The address's search for a board query in a view: the query's own, then `view=cards` (the table is the default), then the candidate. */
-export function boardViewSearch(q: BoardQuery, view: BoardView, card: CardCandidate) {
+/** The address's search for a board query in a view: the query's own, then `view=cards` (the table is the default). */
+export function boardViewSearch(q: BoardQuery, view: BoardView) {
   const params = new URLSearchParams(boardSearch(q));
   if (view === "cards") params.set("view", "cards");
-  if (card !== "a") params.set("card", card);
   const s = params.toString();
   return s ? `?${s}` : "";
 }

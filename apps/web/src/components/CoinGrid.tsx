@@ -1,5 +1,5 @@
 import type { LaunchSummary } from "@launchpad/contract";
-import type { CardCandidate } from "@/lib/board";
+import type { ExplorerCluster } from "./CoinActions";
 import { CoinCard } from "./CoinCard";
 import styles from "./CoinGrid.module.css";
 
@@ -8,12 +8,12 @@ import styles from "./CoinGrid.module.css";
  * The same list as the table's (named "Coins" for assistive technology and the tests, `busy` while a new answer is on
  * its way), so either shape lists the same coins in the same order.
  */
-export function CoinGrid({ launches, now, busy = false, variant }: { launches: LaunchSummary[]; now: number; busy?: boolean; variant: CardCandidate }) {
+export function CoinGrid({ launches, now, platform, busy = false }: { launches: LaunchSummary[]; now: number; platform: ExplorerCluster; busy?: boolean }) {
   return (
     <ul className={styles.grid} aria-busy={busy} aria-label="Coins">
       {launches.map((l) => (
         <li key={l.mint} className={styles.item}>
-          <CoinCard launch={l} now={now} variant={variant} />
+          <CoinCard launch={l} now={now} platform={platform} />
         </li>
       ))}
     </ul>

@@ -52,8 +52,13 @@ test.describe("a first visit", () => {
     await page.goto("/rewards");
     const welcome = page.getByRole("dialog", { name: "Welcome to Stoker" });
     await expect(welcome).toBeVisible();
+    // On a cold `next dev` compile the page can reload itself once it has compiled, and an Escape sent into that reload
+    // is lost (the welcome came back after the reload, 2026-11-07): press it on the settled page.
+    await page.waitForLoadState("networkidle");
+    await expect(welcome).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(welcome).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.localStorage.getItem("launchpad.disclaimer.v1"))).toBe("accepted");
     await page.reload();
     await expect(page.getByRole("main")).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);

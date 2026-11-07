@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
-import { formatDelta, formatMarketValue, kindOf, type CardCandidate } from "@/lib/board";
+import { formatDelta, formatMarketValue, kindOf } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
+import { AssetArt } from "./AssetArt";
+import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
 import { progressOf } from "./CoinRow";
 import { PairMark } from "./PairMark";
@@ -47,125 +49,67 @@ function CurveState({ launch }: { launch: LaunchSummary }) {
 }
 
 /**
- * One coin as a card (#161, owner 2026-10-31): the board's other shape, for browsing, where the table is for scanning.
- * The whole card is the link to the coin's page. It carries what the row does, in the row's formats (the market figures
- * in the most familiar terms, the price in the Quote Asset, the day's change signed), with the market cap as the
- * headline, the asset it is paired with by logo and kind, and the day's price as a sparkline. `variant` is the candidate
- * the owner is picking between (`?card=`); the parts are the same in each, only their arrangement differs.
+ * One coin as a card (#161; the owner picked A on 2026-11-07 with the line made compact, the picture larger, the paired
+ * asset's logo drawn large behind the card, and the copy and explorer controls on every card). The board's other shape,
+ * for browsing, where the table is for scanning. The coin's link (its pair and name) is stretched over the whole card, so
+ * a press anywhere opens its page, and the controls sit above it. It carries what the row does, in the row's formats:
+ * the market cap as the headline with the day's line beside it, the price in the Quote Asset with the day's change, the
+ * curve, and what it is paired with, its volume and its age under a hairline.
  */
-export function CoinCard({ launch, now, variant = "a" }: { launch: LaunchSummary; now: number; variant?: CardCandidate }) {
+export function CoinCard({ launch, now, platform }: { launch: LaunchSummary; now: number; platform: ExplorerCluster }) {
   const quote = quoteTicker(launch.quote);
   const { market } = launch;
   const cap = market.marketCap ? formatMarketValue(market.marketCap, launch.quote) : "-";
-  const imageSize = variant === "c" ? 88 : variant === "b" ? 36 : 44;
-
-  const image = <CoinImage src={launch.image} symbol={launch.symbol} size={imageSize} className={styles.image} loading="lazy" />;
-  const title = (
-    <span className={styles.title}>
-      {/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */}
-      <span className={styles.pairBox}>
-        <PairMark base={launch.symbol} quote={quote} size="sm" />
-      </span>
-      <span className={styles.name}>
-        {launch.name}
-        {launch.rewardTax && <span className={styles.tax}>{launch.rewardTax.bps / 100}% tax</span>}
-      </span>
-    </span>
-  );
-  const headline = (
-    <span className={styles.cap}>
-      <span className={styles.capValue}>{cap}</span>
-      <span className={styles.capLabel}>Market cap</span>
-    </span>
-  );
-  const price = (
-    <span className={styles.price}>
-      {market.price === null ? <span className={styles.none}>No price yet</span> : <><Price value={market.price} /> {quote}</>}
-      <DayChange value={market.change24h} />
-    </span>
-  );
-  const paired = (
-    <span className={styles.paired}>
-      <QuoteLogo quote={launch.quote} size={16} />
-      <span>
-        {quote} <span className={styles.kind}>{kindOf(launch.quote)}</span>
-      </span>
-    </span>
-  );
-  const volume = (
-    <span className={styles.fact}>
-      <span className={styles.factLabel}>24h vol </span>
-      {formatMarketValue(market.volume24h, launch.quote)}
-    </span>
-  );
-  const age = (
-    <span className={`${styles.fact} ${styles.age}`}>
-      <RelativeTime iso={launch.createdAt} now={now} />
-    </span>
-  );
-
-  if (variant === "b") {
-    // B, compact: the line beside the headline, the facts in one row under the curve.
-    return (
-      <Link href={`/coin/${launch.mint}`} className={`card ${styles.card} ${styles.b}`} data-card="b">
-        <span className={styles.top}>
-          {image}
-          {title}
-        </span>
-        <span className={styles.bMiddle}>
-          <span className={styles.bFigures}>
-            {headline}
-            {price}
-          </span>
-          <Sparkline points={launch.sparkline} className={styles.bSpark} />
-        </span>
-        <CurveState launch={launch} />
-        <span className={styles.foot}>
-          {paired}
-          {volume}
-          {age}
-        </span>
-      </Link>
-    );
-  }
-  if (variant === "c") {
-    // C, picture-led: the coin's image large on the left, the pair and the headline beside it, the line across under both.
-    return (
-      <Link href={`/coin/${launch.mint}`} className={`card ${styles.card} ${styles.c}`} data-card="c">
-        <span className={styles.cTop}>
-          {image}
-          <span className={styles.cSide}>
-            {title}
-            {headline}
-            {price}
-          </span>
-        </span>
-        <Sparkline points={launch.sparkline} />
-        <span className={styles.foot}>
-          <CurveState launch={launch} />
-          {volume}
-          {age}
-        </span>
-        {paired}
-      </Link>
-    );
-  }
-  // A, the headline stack: the coin, then the market cap large, the price with its change, the day's line, the curve, the facts.
   return (
-    <Link href={`/coin/${launch.mint}`} className={`card ${styles.card} ${styles.a}`} data-card="a">
+    <article className={`card ${styles.card}`} data-coin-card="">
+      {/* The paired asset, drawn large and faint behind the figures: what this coin is priced in, at a glance. */}
+      <AssetArt quote={launch.quote} className={styles.art} letterClassName={styles.artLetter} />
       <span className={styles.top}>
-        {image}
-        {title}
-        {age}
+        <CoinImage src={launch.image} symbol={launch.symbol} size={56} className={styles.image} loading="lazy" />
+        <Link href={`/coin/${launch.mint}`} className={styles.title}>
+          {/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */}
+          <span className={styles.pairBox}>
+            <PairMark base={launch.symbol} quote={quote} size="sm" />
+          </span>
+          <span className={styles.name}>
+            {launch.name}
+            {launch.rewardTax && <span className={styles.tax}>{launch.rewardTax.bps / 100}% tax</span>}
+          </span>
+        </Link>
+        <CoinActions mint={launch.mint} symbol={launch.symbol} platform={platform} className={styles.actions} />
       </span>
-      {headline}
-      {price}
-      <Sparkline points={launch.sparkline} />
+      {/* The headline with the day's line beside it, on the left, clear of the asset drawn behind the right side. */}
+      <span className={styles.headline}>
+        <span className={styles.cap}>
+          <span className={styles.capValue}>{cap}</span>
+          <span className={styles.capLabel}>Market cap</span>
+        </span>
+        <span className={styles.spark}>
+          <Sparkline points={launch.sparkline} />
+        </span>
+      </span>
+      <span className={styles.price}>
+        {market.price === null ? <span className={styles.none}>No price yet</span> : <><Price value={market.price} /> {quote}</>}
+        <DayChange value={market.change24h} />
+      </span>
       <CurveState launch={launch} />
       <span className={styles.foot}>
-        {paired}
-        {volume}
+        <span className={styles.paired}>
+          <QuoteLogo quote={launch.quote} size={16} />
+          <span>
+            {quote} <span className={styles.kind}>{kindOf(launch.quote)}</span>
+          </span>
+        </span>
+        <span className={styles.facts}>
+          <span className={styles.fact}>
+            <span className={styles.factLabel}>24h vol </span>
+            {formatMarketValue(market.volume24h, launch.quote)}
+          </span>
+          <span className={`${styles.fact} ${styles.age}`}>
+            <RelativeTime iso={launch.createdAt} now={now} />
+          </span>
+        </span>
       </span>
-    </Link>
+    </article>
   );
 }

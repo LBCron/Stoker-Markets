@@ -2,7 +2,7 @@ import styles from "./Sparkline.module.css";
 
 /**
  * A coin's price over the last day as a word-sized line (#161, after Tufte's sparkline): the API's 24 hourly points,
- * the latest last, drawn edge to edge in the box it is given, in the gain colour when the day ends above where it began
+ * the latest last, drawn edge to edge in the box it is given (the caller sets its width and height), in the gain colour when the day ends above where it began
  * and the loss colour when below. A coin nobody has traded, or a list that has not brought the line yet, draws a flat
  * hairline, so every card keeps one shape. The figures beside it say what the line shows; the line is never the only
  * place a number is.

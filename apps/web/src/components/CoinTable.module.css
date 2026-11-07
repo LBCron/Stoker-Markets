@@ -5,7 +5,7 @@
   header line can stick under the site header while the page scrolls.
 */
 .table {
-  --cols: minmax(200px, 2.4fr) minmax(104px, 1.1fr) 64px 72px minmax(80px, 0.9fr) minmax(88px, 1fr) 124px 64px 64px;
+  --cols: minmax(200px, 2.4fr) minmax(104px, 1.1fr) 64px 72px minmax(80px, 0.9fr) minmax(88px, 1fr) 124px 64px 64px 84px;
   overflow: clip;
 }
 
@@ -42,7 +42,7 @@
   transition: opacity var(--dur-fast) var(--ease-standard) var(--dur-fast);
 }
 
-.rows > li:last-child > a {
+.rows > li:last-child > * {
   border-bottom: 0;
 }
 
