@@ -2,7 +2,7 @@
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { LaunchList } from "@launchpad/contract";
-import { QUOTES, expect, fundQuote, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
+import { QUOTES, expect, expectHydrated, fundQuote, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
 import { connectTestWallet } from "./wallet";
 
 const cards = (page: Page) => page.getByRole("list", { name: "Coins" }).getByRole("link");
@@ -10,6 +10,7 @@ const sorts = (page: Page) => page.getByRole("group", { name: "Sort coins" });
 const paired = (page: Page) => page.getByRole("group", { name: "Paired with" });
 const search = (page: Page) => page.getByRole("searchbox", { name: "Search coins" });
 /** A chip of the asset bar: a kind or an asset, named by its label, then its count of coins and (an asset) their volume. */
+const views = (page: Page) => page.getByRole("group", { name: "View coins as" });
 const railRow = (page: Page, label: string) => paired(page).getByRole("button", { name: new RegExp(`^${label}\\b`) });
 
 /** The mints the API lists for a query, in order: what the board must show. */
@@ -107,6 +108,76 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await expect(cards(page).filter({ hasNotText: "/NVDAx" })).toHaveCount(0);
   await railRow(page, "PreStocks").click();
   await expect(page.getByText("No coins match these filters.")).toBeVisible();
+});
+
+test("a trader reads the board as cards with the table's figures, and the choice holds across a load and in a shared link", async ({ page }) => {
+  const creator = await fundedKeypair(5);
+  const trader = await fundedKeypair(5);
+  const coin = await launchViaApi(creator, { name: "Card Reader", symbol: "CARDR" });
+  const quiet = await launchViaApi(creator, { name: "Card Quiet", symbol: "CARDQ" });
+  await tradeViaApi(trader, coin, "buy", BigInt(0.2 * LAMPORTS_PER_SOL));
+
+  await page.goto("/coins");
+  // The table is the default, and the toggle says so.
+  await expect(views(page).getByRole("button", { name: "Table", pressed: true })).toBeVisible();
+  await expectBoard(page, { sort: "market_cap" });
+  const coins = page.getByRole("list", { name: "Coins" });
+  const row = coins.locator(`a[href="/coin/${coin}"]`);
+  const figures = {
+    cap: (await row.locator("[data-label='Cap']").textContent())!,
+    volume: (await row.locator("[data-label='Vol']").textContent())!,
+    change: (await row.locator("[data-label='24h']").textContent())!,
+  };
+
+  // Cards: the same coins in the same order, the address says so, and each card carries the row's figures.
+  await expectHydrated(page);
+  await views(page).getByRole("button", { name: "Cards" }).click();
+  await expect(views(page).getByRole("button", { name: "Cards", pressed: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/coins\?view=cards$/);
+  await expectBoard(page, { sort: "market_cap" });
+  const card = coins.locator(`a[href="/coin/${coin}"]`);
+  await expect(card).toHaveAttribute("data-card", "a");
+  await expect(card).toContainText(`${figures.cap}Market cap`);
+  await expect(card).toContainText(`24h vol ${figures.volume}`);
+  await expect(card).toContainText(`24h change ${figures.change}`);
+  await expect(card).toContainText("SOL Solana");
+  await expect(card).toContainText("CARDR/SOL");
+  // The day's line: the traded coin's rises, the quiet one's is the flat hairline of a coin nobody has traded.
+  await expect(card.locator("[data-sparkline] path")).toHaveCount(2);
+  await expect(coins.locator(`a[href="/coin/${quiet}"] [data-sparkline] path`)).toHaveCount(1);
+
+  // A sort keeps the view in the address.
+  await sorts(page).getByRole("button", { name: "Newest" }).click();
+  await expect(page).toHaveURL(/\/coins\?sort=new&view=cards$/);
+  await expectBoard(page, { sort: "new" });
+  await expect(coins.locator("[data-card]").first()).toBeVisible();
+
+  // Across a load, and on a plain link to the board: the browser remembers the choice, and the address says it again.
+  await page.reload();
+  await expect(views(page).getByRole("button", { name: "Cards", pressed: true })).toBeVisible();
+  await page.goto("/coins");
+  await expect(views(page).getByRole("button", { name: "Cards", pressed: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/coins\?view=cards$/);
+  await expect(coins.locator("[data-card]").first()).toBeVisible();
+
+  // A shared link opens in the sender's view in a browser that never chose one; a plain link there is the table.
+  await page.context().clearCookies({ name: "board-view" });
+  await page.goto("/coins?view=cards");
+  await expect(views(page).getByRole("button", { name: "Cards", pressed: true })).toBeVisible();
+  await expect(coins.locator(`a[href="/coin/${coin}"]`)).toContainText(`${figures.cap}Market cap`);
+  await page.goto("/coins");
+  await expect(views(page).getByRole("button", { name: "Table", pressed: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/coins$/);
+
+  // Back to the table: remembered too, and the address drops the view.
+  await page.goto("/coins?view=cards");
+  // A click before hydration lands on the server's markup and does nothing.
+  await expectHydrated(page);
+  await views(page).getByRole("button", { name: "Table" }).click();
+  await expect(page).toHaveURL(/\/coins$/);
+  await expect(coins.locator("[data-card]")).toHaveCount(0);
+  await page.reload();
+  await expect(views(page).getByRole("button", { name: "Table", pressed: true })).toBeVisible();
 });
 
 test("a trader finds a coin by name, ticker or contract address, and the address keeps the search", async ({ page }) => {

@@ -110,6 +110,61 @@ export function boardSearch(q: BoardQuery) {
   return s ? `?${s}` : "";
 }
 
+/**
+ * The board's two shapes (#161, owner 2026-10-31): the table, one row a pair for scanning, and the cards, one card a coin
+ * with its market cap as the headline, for browsing. The table is the default. A visitor's choice is a cookie, so the
+ * server draws the chosen shape and a load never paints the other one first (the scheme's way, src/lib/scheme.ts), and
+ * the address carries `?view=cards`, so a shared link opens in the sender's view; the address wins over the cookie.
+ */
+export const BOARD_VIEWS = ["table", "cards"] as const;
+export type BoardView = (typeof BOARD_VIEWS)[number];
+export const BOARD_VIEW_COOKIE = "board-view";
+export const VIEW_LABELS: Record<BoardView, string> = { table: "Table", cards: "Cards" };
+
+const isView = (v: string | undefined): v is BoardView => (BOARD_VIEWS as readonly string[]).includes(v ?? "");
+
+/** The view a page load shows: the address's, else the visitor's cookie, else the table. */
+export function boardViewFrom(param: string | string[] | undefined, cookie: string | undefined): BoardView {
+  const v = Array.isArray(param) ? param[0] : param;
+  if (isView(v)) return v;
+  return isView(cookie) ? cookie : "table";
+}
+
+/**
+ * The card candidates (#161) behind `?card=`, for the owner to pick from by elimination on the running site; A is the
+ * default, and the switch goes after the pick.
+ */
+export const CARD_CANDIDATES = ["a", "b", "c"] as const;
+export type CardCandidate = (typeof CARD_CANDIDATES)[number];
+export function cardCandidateFrom(param: string | string[] | undefined): CardCandidate {
+  const v = Array.isArray(param) ? param[0] : param;
+  return (CARD_CANDIDATES as readonly string[]).includes(v ?? "") ? (v as CardCandidate) : "a";
+}
+
+/** The address's search for a board query in a view: the query's own, then `view=cards` (the table is the default), then the candidate. */
+export function boardViewSearch(q: BoardQuery, view: BoardView, card: CardCandidate) {
+  const params = new URLSearchParams(boardSearch(q));
+  if (view === "cards") params.set("view", "cards");
+  if (card !== "a") params.set("card", card);
+  const s = params.toString();
+  return s ? `?${s}` : "";
+}
+
+/** What a Quote Asset is, in a word or two for a card: "Solana", "Stablecoin", "xStocks stock". */
+const KIND_WORDS: Record<QuoteCategory, string> = {
+  sol: "Solana",
+  stablecoin: "Stablecoin",
+  tokenized_stock: "Stock",
+  rwa: "Real-world asset",
+  wrapped: "Wrapped coin",
+  defi: "DeFi token",
+  leveraged: "Leveraged token",
+  collectible: "Collectible",
+  meme: "Meme coin",
+  community: "Community coin",
+};
+export const kindOf = (q: Pick<QuoteRef, "category" | "issuer">) => (q.issuer ? `${ISSUER_LABELS[q.issuer]} stock` : KIND_WORDS[q.category]);
+
 export const isDefaultBoard = (q: BoardQuery) => !q.category && !q.issuer && !q.quote && !q.q && q.sort === DEFAULT_BOARD.sort;
 
 const compact = (n: number) => n.toLocaleString("en-US", { notation: "compact", maximumSignificantDigits: 3 });

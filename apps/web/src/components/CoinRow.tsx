@@ -10,7 +10,7 @@ import { RelativeTime } from "./RelativeTime";
 import styles from "./CoinRow.module.css";
 
 /** How far the curve is toward its Graduation Target, to a hundredth of a percent as CurveProgress has it; a sold-out curve is done. */
-function progressOf(launch: LaunchSummary) {
+export function progressOf(launch: LaunchSummary) {
   if (launch.curve.status !== "live") return 100;
   const target = BigInt(launch.graduationTarget);
   return target === 0n ? 0 : Math.min(100, Number((BigInt(launch.curve.raised) * 10_000n) / target) / 100);

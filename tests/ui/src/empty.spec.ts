@@ -72,6 +72,9 @@ test("the empty board shows every control", async ({ page }) => {
   // The search, the sorts and every kind in the asset bar are there before the first coin, so a visitor sees what the board does.
   await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Sort coins" }).getByRole("button")).toHaveText(["Market cap", "Newest", "24h volume", "Near graduation"]);
+  // The two shapes of the board (#161), the table first and chosen.
+  await expect(page.getByRole("group", { name: "View coins as" }).getByRole("button")).toHaveText(["Table", "Cards"]);
+  await expect(page.getByRole("group", { name: "View coins as" }).getByRole("button", { name: "Table" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("group", { name: "Paired with" }).getByRole("button")).toHaveText([
     "All assets", "xStocks", "PreStocks", "Tessera", "Backpack", "Solana", "Currencies", "Wrapped", "DeFi", "Real-world assets", "Leverage", "Collectibles", "Memes", "Community",
   ]);
@@ -79,6 +82,14 @@ test("the empty board shows every control", async ({ page }) => {
   await expectHydrated(page);
   // The status line says when the list last updated, a clock like any other.
   await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true, mask: [page.locator("time")] });
+});
+
+test("the empty board as cards keeps every control and the same invitation", async ({ page }) => {
+  await page.goto("/coins?view=cards");
+  await expect(page.getByText("Be the first to stoke a coin")).toBeVisible();
+  await expect(page.getByRole("group", { name: "View coins as" }).getByRole("button", { name: "Cards" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("group", { name: "Sort coins" }).getByRole("button")).toHaveCount(4);
+  await expectNoHorizontalOverflow(page);
 });
 
 test("the assets page lists every Quote Asset before the first coin", async ({ page }) => {

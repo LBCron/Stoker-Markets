@@ -1,0 +1,282 @@
+/*
+  One coin as a card (#161). The card is the link: the surface card with a hover tint and the focus ring inset. Every
+  card in a row is the same height (the grid stretches them), and the parts sit in the same places on every card, so
+  the eye reads only the differences. Figures are the mono; the name beside the pair is a word.
+*/
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .card:hover {
+    background: var(--hover);
+    border-color: var(--line-strong);
+  }
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* The coin: its image, then the pair over the name; in A the age at the far end. */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.image {
+  flex: none;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+  background: var(--sunken);
+}
+
+.title {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pairBox {
+  /* A flex box of its own, so the fitted pair's subpixel size never rounds the line taller (as CoinRow's). */
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The name wraps when the card is narrower than it, so nothing is cut (the suite's truncation check). */
+.name {
+  min-width: 0;
+  font-size: var(--text-label);
+  line-height: 1.3;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.tax {
+  margin-left: 6px;
+  color: var(--caution);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The headline: the market cap in the figure face, named under it. */
+.cap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.capValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-figure-lg);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.capLabel,
+.factLabel {
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+/* The price in the Quote Asset with the day's change beside it. */
+.price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums slashed-zero;
+  color: var(--ink-2);
+}
+
+.none {
+  font-family: var(--font-body);
+  color: var(--ink-3);
+}
+
+.change {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.flat {
+  color: var(--ink-2);
+}
+
+/* The curve: the heat bar across the card with its percentage, or the word for what happened. */
+.curve {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 18px;
+  font-size: var(--text-caption);
+}
+
+.track {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--heat);
+}
+
+.pct {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+.graduated {
+  color: var(--up);
+  font-weight: 500;
+}
+
+.graduating {
+  color: var(--caution);
+  font-weight: 500;
+}
+
+/* The facts under a hairline: what the coin is paired with, and its volume (and in B and C its age). */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.paired {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--text-caption);
+  color: var(--ink-2);
+}
+
+.kind {
+  color: var(--ink-3);
+}
+
+.fact {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums slashed-zero;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.factLabel {
+  font-family: var(--font-body);
+}
+
+.age {
+  color: var(--ink-3);
+}
+
+.a .top .age {
+  flex: none;
+  align-self: flex-start;
+}
+
+/* B, compact: the headline and the price on the left, the line beside them. */
+.b {
+  gap: 12px;
+}
+
+.bMiddle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.bFigures {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.b .capValue {
+  font-size: var(--text-h3);
+}
+
+.bSpark {
+  height: 44px;
+}
+
+/* C, picture-led: the image large on the left with the coin beside it. */
+.cTop {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cSide {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.c .capValue {
+  font-size: var(--text-h3);
+}
+
+.c .cap {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.c .foot .curve {
+  flex: 1 1 140px;
+}
+
+.c > .paired {
+  margin-top: -4px;
+}

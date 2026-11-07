@@ -115,6 +115,13 @@ test("board", async ({ page }) => {
   await snap(page, "board.png");
 });
 
+test("board as cards", async ({ page }) => {
+  await page.goto("/coins?view=cards");
+  await expect(page.getByRole("button", { name: "Cards", pressed: true })).toBeVisible();
+  await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
+  await snap(page, "board-cards.png");
+});
+
 test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
   await page.goto("/coins?sort=market_cap&category=stablecoin");
   await expect(page.getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();

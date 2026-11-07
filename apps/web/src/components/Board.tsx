@@ -4,10 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
-import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_FACTS, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
+import {
+  BOARD_VIEW_COOKIE, BOARD_VIEWS, boardViewSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_FACTS, SORT_LABELS, SORT_ORDER, VIEW_LABELS,
+  type BoardView, type CardCandidate, type PairedChip,
+} from "@/lib/board";
 import { timeAgo } from "@/lib/format";
 import { SEARCH_HASH } from "@/lib/search";
 import { AssetBar } from "./AssetBar";
+import { CoinGrid } from "./CoinGrid";
 import { CoinTable } from "./CoinTable";
 import { EmptyState } from "./EmptyState";
 import styles from "./Board.module.css";
@@ -17,6 +21,9 @@ const REFRESH_MS = 4_000;
 const SEARCH_DEBOUNCE_MS = 250;
 /** How long the feed may go without an answer before the status line says it has paused. */
 const PAUSED_AFTER_MS = 15_000;
+
+/** What a list asks the API for in a view: the cards draw each coin's day as a line, which the table leaves out. */
+const fieldsFor = (view: BoardView) => (view === "cards" ? (["sparkline"] as const) : []);
 
 const sameQuery = (a: BoardQuery, b: BoardQuery) =>
   a.sort === b.sort && a.category === b.category && a.issuer === b.issuer && a.quote === b.quote && a.q === b.q;
@@ -28,11 +35,20 @@ const sameQuery = (a: BoardQuery, b: BoardQuery) =>
  * sorted or filtered board can be shared and survives a reload. The controls are there before the first coin too, so
  * a visitor to a new platform sees what the board does. `renderedAt` is the server's clock at render, so "launched Xs
  * ago" hydrates to the same text the server sent. The status line names the list as the fact it is and says when it
- * last updated, and says so when the feed has stopped answering (#135).
+ * last updated, and says so when the feed has stopped answering (#135). The list shows as the table or as cards (#161),
+ * by the toggle beside the sorts; the choice is the visitor's cookie and the address's `?view=` (src/lib/board.ts).
  */
 export function Board({
-  initial, initialMore, initialQuery, quotes: initialQuotes, renderedAt,
-}: { initial: LaunchSummary[]; initialMore: boolean; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number }) {
+  initial, initialMore, initialQuery, initialView, card, quotes: initialQuotes, renderedAt,
+}: {
+  initial: LaunchSummary[];
+  initialMore: boolean;
+  initialQuery: BoardQuery;
+  initialView: BoardView;
+  card: CardCandidate;
+  quotes: LaunchQuote[];
+  renderedAt: number;
+}) {
   const [launches, setLaunches] = useState(initial);
   const [more, setMore] = useState(initialMore);
   const [query, setQuery] = useState(initialQuery);
@@ -44,7 +60,9 @@ export function Board({
   const [tick, setTick] = useState(renderedAt);
   const [updatedAt, setUpdatedAt] = useState(renderedAt);
   const [typed, setTyped] = useState(initialQuery.q);
+  const [view, setView] = useState(initialView);
   const latest = useRef(initialQuery);
+  const viewRef = useRef(initialView);
   const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
   const field = useRef<HTMLInputElement>(null);
 
@@ -55,11 +73,20 @@ export function Board({
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
   }, []);
 
+  // The view came from the visitor's cookie when the address named none: the address says it too, so a link copied
+  // from here opens in the same shape.
+  useEffect(() => {
+    if (initialView === "cards" && !new URLSearchParams(window.location.search).has("view")) {
+      window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, "cards", card)}${window.location.hash}`);
+    }
+  }, [initialView, card]);
+
   const load = useCallback(async (q: BoardQuery) => {
     try {
-      const [{ launches: next, nextOffset }, { quotes: inUse }] = await Promise.all([listLaunches(q), listLaunchQuotes()]);
-      // A slow answer for a query the visitor has since changed is dropped.
-      if (!sameQuery(q, latest.current)) return;
+      const asked = viewRef.current;
+      const [{ launches: next, nextOffset }, { quotes: inUse }] = await Promise.all([listLaunches({ ...q, fields: [...fieldsFor(asked)] }), listLaunchQuotes()]);
+      // A slow answer for a query the visitor has since changed is dropped, and one without the lines the cards now want.
+      if (!sameQuery(q, latest.current) || (asked !== viewRef.current && viewRef.current === "cards")) return;
       setLaunches(next);
       setMore(nextOffset !== null);
       setShown(q);
@@ -86,8 +113,18 @@ export function Board({
   function change(next: BoardQuery) {
     latest.current = next;
     setQuery(next);
-    window.history.replaceState(null, "", `${window.location.pathname}${boardSearch(next)}`);
+    window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(next, viewRef.current, card)}`);
     void load(next);
+  }
+
+  /** The other shape: remembered for this browser, said in the address, and the cards' lines fetched with the next list. */
+  function chooseView(next: BoardView) {
+    if (next === viewRef.current) return;
+    viewRef.current = next;
+    setView(next);
+    document.cookie = `${BOARD_VIEW_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+    window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, next, card)}`);
+    if (next === "cards" && launches.some((l) => l.sparkline === undefined)) void load(latest.current);
   }
 
   /** A kind of Quote Asset keeps the sort and shows only coins paired with that kind; a chosen asset outside it no longer applies. */
@@ -131,6 +168,8 @@ export function Board({
     >
       {shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}
     </EmptyState>
+  ) : view === "cards" ? (
+    <CoinGrid launches={launches} now={now} busy={loading} variant={card} />
   ) : (
     <CoinTable launches={launches} now={now} busy={loading} />
   );
@@ -174,6 +213,14 @@ export function Board({
               {SORT_ORDER.map((s) => (
                 <button key={s} type="button" aria-pressed={query.sort === s} onClick={() => change({ ...query, sort: s })}>
                   {SORT_LABELS[s]}
+                </button>
+              ))}
+            </div>
+            <span className={`${styles.sortLabel} ${styles.viewLabel}`}>View</span>
+            <div className="segmented" role="group" aria-label="View coins as">
+              {BOARD_VIEWS.map((v) => (
+                <button key={v} type="button" aria-pressed={view === v} onClick={() => chooseView(v)}>
+                  {VIEW_LABELS[v]}
                 </button>
               ))}
             </div>
