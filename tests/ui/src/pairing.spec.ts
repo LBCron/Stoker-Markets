@@ -96,6 +96,8 @@ test("a Creator launches a coin paired with a tokenized stock at the exact Gradu
   // 1 SOL at 150 USD is 150 USD of NVDAx at 180 USD: 0.83333333 at 8 decimals, which the transaction fixes.
   expect(target.raw).toBe("83333333");
   await page.waitForURL(/\/coin\/[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+  // One action, one signature: the button prepared, simulated and had the wallet sign the launch once (#172).
+  expect(wallet.requests).toHaveLength(1);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CHIP paired with NVDAx/);
   await expect(page.getByText("0 of 0.8333 NVDAx raised")).toBeVisible();
   const launch = (await listLaunches()).find((l) => l.mint === page.url().split("/").pop());
