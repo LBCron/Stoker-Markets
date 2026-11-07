@@ -149,7 +149,7 @@ test("a trader reads the board as cards with the table's figures, and the choice
   await expect(card.locator("[data-sparkline] path")).toHaveCount(2);
   await expect(entry(page, quiet).locator("[data-sparkline] path")).toHaveCount(1);
   // The card's own link is the pair and the name, and the whole card opens it.
-  await expect(card.getByRole("link", { name: /CARDR/ })).toHaveAttribute("href", `/coin/${coin}`);
+  await expect(card.getByRole("link", { name: /^CARDR paired with/ })).toHaveAttribute("href", `/coin/${coin}`);
 
   // A sort keeps the view in the address.
   await sorts(page).getByRole("button", { name: "Newest" }).click();

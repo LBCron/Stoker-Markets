@@ -1,7 +1,8 @@
 /*
   The columns are set once on the table (`--cols` in CoinTable.module.css), so the header line and every row agree.
   A row is 40px (#135: fifteen to twenty coins on a laptop): the pair above the name in the first cell, every figure
-  right-aligned in tabular mono under its name, a hairline between rows and a hover tint; the row is the link.
+  right-aligned in tabular mono under its name, a hairline between rows and a hover tint; the coin's link is
+  stretched over the row, and the copy and explorer controls close it (#161).
 */
 .row {
   position: relative;
@@ -205,7 +206,7 @@
     grid-template-areas:
       "coin price"
       "coin delta24h"
-      "facts actions";
+      "facts facts";
     gap: 2px 12px;
     padding: 8px 12px;
     white-space: normal;
@@ -214,7 +215,8 @@
   .price { grid-area: price; overflow-wrap: anywhere; }
   .delta24h { grid-area: delta24h; }
   .delta5m { display: none; }
-  .actions { grid-area: actions; align-self: end; }
+  /* The controls close the figures' line, at its right edge, and wrap under it only when the line is full. */
+  .actions { margin-left: auto; }
   .facts {
     grid-area: facts;
     display: flex;
