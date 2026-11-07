@@ -14,19 +14,19 @@ test("the launch form's copy check names the protected coin, and the coin page s
   await expect(coin.locator("[data-field]")).toHaveCount(0);
   await expect(coin).toContainText("A launched coin's name, ticker and image are its own for a while");
   const creator = await fundedKeypair();
-  const mint = await launchViaApi(creator, { name: "Ember Guild", symbol: "EMBER", description: "The original." });
+  const mint = await launchViaApi(creator, { name: "Hearth Guild", symbol: "HEARTH", description: "The original." });
 
   // The same ticker in leetspeak, the name with a claim word, and the launched picture itself: all taken, by name.
-  await page.getByLabel("Ticker").fill("3MBER");
-  await page.getByLabel("Name").fill("Official Ember Guild");
-  await page.locator('input[type="file"]').setInputFiles({ name: "copy.png", mimeType: "image/png", buffer: coinImage("EMBER") });
-  await expect(verdict("symbol")).toContainText("Taken by Ember Guild (EMBER) until");
-  await expect(verdict("name")).toContainText("Taken by Ember Guild (EMBER) until");
-  await expect(verdict("image")).toContainText("A copy of EMBER's image, protected until");
+  await page.getByLabel("Ticker").fill("H3ARTH");
+  await page.getByLabel("Name").fill("Official Hearth Guild");
+  await page.locator('input[type="file"]').setInputFiles({ name: "copy.png", mimeType: "image/png", buffer: coinImage("HEARTH") });
+  await expect(verdict("symbol")).toContainText("Taken by Hearth Guild (HEARTH) until");
+  await expect(verdict("name")).toContainText("Taken by Hearth Guild (HEARTH) until");
+  await expect(verdict("image")).toContainText("A copy of HEARTH's image, protected until");
   await expect(coin).toContainText("nobody else can use your coin's name, ticker or image here for 45 seconds");
   // One letter more on a ticker of five or more is a near copy (four-letter tickers have too many neighbours); a different coin is free.
-  await page.getByLabel("Ticker").fill("EMBERS");
-  await expect(verdict("symbol")).toContainText("Too close to EMBER (Ember Guild)");
+  await page.getByLabel("Ticker").fill("HEARTHS");
+  await expect(verdict("symbol")).toContainText("Too close to HEARTH (Hearth Guild)");
   await page.getByLabel("Ticker").fill("FORGE");
   await page.getByLabel("Name").fill("Forge Hand");
   await page.locator('input[type="file"]').setInputFiles({ name: "forge.png", mimeType: "image/png", buffer: coinImage("FORGE") });
