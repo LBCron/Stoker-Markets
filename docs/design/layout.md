@@ -30,6 +30,7 @@ They are the ones that bear on arrangement; the colour brief's eleven stand besi
 1. **A ranked, compared, searched collection is a table, never a card grid.**
    NN/g: cards suit heterogeneous items browsed rather than searched; a vertical list is more scannable, cards hinder comparison and de-emphasise ranking.
    The board is homogeneous, ranked and searched, so it is a table; a card earns its place only where items differ in kind (an asset tile, a featured pair).
+   The owner asked on 2026-10-31 for a card grid beside it as a visitor's choice (#161): the table stays the default, the cards are a toggle away for browsing, and each card is the same shape with its parts in the same places (principle 9), with the day's line as a sparkline.
 2. **The pair goes first and left.**
    NN/g: the first column is the human-readable identifier; visitors spend 80% of their time on the left half of a page and read the first words of a line most (F-pattern, serial position effect).
    In every row, panel and title the first words are BASE/QUOTE with both marks; a Quote Asset at the right end of a row hides the differentiator.
