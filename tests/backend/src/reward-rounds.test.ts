@@ -81,7 +81,8 @@ describe("Reward Rounds", () => {
     const [big, mid, dust] = [await fundedWallet(10), await fundedWallet(10), await fundedWallet(10)];
     await trade(big, mint, "buy", 100_000_000n);
     await trade(mid, mint, "buy", 30_000_000n);
-    await trade(dust, mint, "buy", 1_000n);
+    // On a 1T coin (#166) the smallest buy is millions of coins, above the rules' 10,000, so the dust arrives by transfer.
+    await giveCoins(big, mint, dust.publicKey, 1_000_000_000n);
     const before = await rewards(mint);
     expect(before.rewardTaxBps).toBe(bps);
     // Every buy withheld 5% of the coins on the way to the wallet; it is all still waiting.
@@ -200,7 +201,8 @@ describe("Reward Rounds", () => {
     const empty = Keypair.generate().publicKey;
     await trade(big, mint, "buy", 350_000_000n);
     await trade(mid, mint, "buy", 150_000_000n);
-    await giveCoins(big, mint, empty, 20_000_000_000n);
+    // 20M coins, the 1T coin's (#166) equivalent of 20,000 of a 1B one: a share of the pot above nothing, below the rent minimum.
+    await giveCoins(big, mint, empty, 20_000_000_000_000n);
     const holdings = { big: await held(mint, big), mid: await held(mint, mid), empty: await tokenBalance(getAssociatedTokenAddressSync(new PublicKey(mint), empty, false, TOKEN_2022_PROGRAM_ID)) };
     const rules = before.rules!;
     expect(holdings.empty).toBeGreaterThanOrEqual(BigInt(rules.minHolding));

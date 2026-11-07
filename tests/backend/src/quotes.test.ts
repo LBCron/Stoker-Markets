@@ -281,7 +281,8 @@ describe("the 1T shape at the largest Graduation Target a curve rule allows", ()
       const tx = await connection().getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
       const mint = tx!.meta!.postTokenBalances!.find((b) => b.mint !== jto.mint.toBase58())!.mint;
       const trader = await fundedWallet();
-      const spend = 100_000_000_000_000n; // 100,000 JTO
+      // 10 JTO: enough to move the curve, small enough that its Platform Fee leaves later tests' Ledger figures alone.
+      const spend = 10_000_000_000n;
       await mintLocalQuote(connection(), jto.mint, trader.publicKey, spend);
       const p = await prepared(trader, mint, "buy", spend);
       await deliverWebhook([await signAndSend(p, trader)]);
