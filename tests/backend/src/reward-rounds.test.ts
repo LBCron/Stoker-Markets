@@ -9,7 +9,7 @@ import {
 } from "@solana/spl-token";
 import { loadCurve } from "@launchpad/chain";
 import {
-  CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, Revenue, RewardRoundDetail, RewardRulesPage, WalletRewards, type RewardPayoutAsset,
+  CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, Revenue, RewardRoundDetail, RewardRulesPage, WalletRewards, type RewardPayoutAsset, type RewardTaxBps,
 } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { REWARD_ROUNDS_CRON } from "@launchpad/stack";
@@ -35,7 +35,7 @@ async function runRounds(maxPayouts?: number) {
   };
 }
 
-async function rewardCoin(bps: 100 | 300 | 500 = 500, payout: RewardPayoutAsset = "coin", quoteMint?: string) {
+async function rewardCoin(bps: RewardTaxBps = 500, payout: RewardPayoutAsset = "coin", quoteMint?: string) {
   const creator = await fundedWallet(10);
   const res = await prepare({ creator: creator.publicKey.toBase58(), rewardTax: String(bps), rewardPayout: payout, symbol: "RWRD", ...(quoteMint ? { quoteMint } : {}) });
   expect(res.status, await res.clone().text()).toBe(200);
@@ -76,7 +76,8 @@ describe("Reward Rounds", () => {
   });
 
   it("pays every eligible holder their pro-rata share of the collected tax, in the coin itself", async () => {
-    const { mint, bps } = await rewardCoin(500);
+    // At 2%, one of the two rates the owner added on 2026-11-07: every rate takes the same path.
+    const { mint, bps } = await rewardCoin(200);
     // Three holders: two well above the minimum holding, one far below it (the test curve graduates at 1 SOL).
     const [big, mid, dust] = [await fundedWallet(10), await fundedWallet(10), await fundedWallet(10)];
     await trade(big, mint, "buy", 100_000_000n);
@@ -84,7 +85,7 @@ describe("Reward Rounds", () => {
     await trade(dust, mint, "buy", 1_000n);
     const before = await rewards(mint);
     expect(before.rewardTaxBps).toBe(bps);
-    // Every buy withheld 5% of the coins on the way to the wallet; it is all still waiting.
+    // Every buy withheld 2% of the coins on the way to the wallet; it is all still waiting.
     expect(BigInt(before.waiting.total)).toBeGreaterThan(0n);
     expect(before.rounds).toEqual([]);
     const rules = before.rules!;
@@ -269,7 +270,8 @@ describe("Reward Rounds", () => {
 
   it("pays a Quote Asset payout paired with USDC in USDC, into the holder's own account", async () => {
     const usdc = LOCAL_QUOTES.USDC;
-    const { mint } = await rewardCoin(300, "quote", usdc.toBase58());
+    // At 4%, the other rate added on 2026-11-07.
+    const { mint } = await rewardCoin(400, "quote", usdc.toBase58());
     const holder = await fundedWallet(10);
     await mintLocalQuote(connection(), usdc, holder.publicKey, 100_000_000n);
     await trade(holder, mint, "buy", 60_000_000n);

@@ -131,8 +131,9 @@ async function quoteCreatorFee(pool: PublicKey, quoteMint: PublicKey) {
 async function graduatedCoin(opts: { quoteMint?: PublicKey } = {}) {
   const quoteMint = opts.quoteMint ?? WSOL_MINT;
   const creator = await fundedWallet();
-  // A ticker of its own per coin: Copy Protection refuses a second "FEES" from another wallet inside the stack's window.
-  const symbol = `FEE${uniqueTag().slice(0, 4)}`;
+  // A ticker of its own per coin: Copy Protection refuses a second "FEES" from another wallet inside the stack's window,
+  // and a near copy too, so the whole six-character tag (prepare's own tail, see `client.ts`).
+  const symbol = `FEE${uniqueTag()}`;
   const { prepared, signature } = await launch(creator, { quoteMint: quoteMint.toBase58(), symbol, exact: true });
   await deliverWebhook([signature]);
   const trader = await fundedWallet(10);

@@ -29,24 +29,27 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await expect(types.getByRole("radio", { name: /^Holder rewards Coming soon/ })).toBeDisabled();
   await expect(terms).toHaveCount(0);
   await types.getByRole("radio", { name: "Reward Launch, paid in the coin" }).check();
+  // Five rates, 1% to 5% (owner, 2026-11-07), the lowest chosen until the Creator picks another.
+  await expect(terms.getByRole("button")).toHaveText(["1%", "2%", "3%", "4%", "5%"]);
+  await expect(terms.getByRole("button", { name: "1%" })).toHaveAttribute("aria-pressed", "true");
   await expect(terms).toContainText("Holders are paid in DIVD itself, never sold. Fixed at launch, like the rate.");
   await types.getByRole("radio", { name: "Reward Launch, paid in SOL" }).check();
   await expect(types.getByRole("radio", { name: "Reward Launch, paid in the coin" })).not.toBeChecked();
-  await terms.getByRole("button", { name: "3%" }).click();
+  await terms.getByRole("button", { name: "4%" }).click();
   await expect(terms).toContainText(
     "The tax is sold for SOL in small slices, at most 0.5% of the coins in the market per run, and holders are paid in SOL. Fixed at launch, like the rate.",
   );
 
   const prepared = nextPrepared(page);
   // The summary says the launch type, and the preview card carries the tax as the board's cards do.
-  await expect(summary(page)).toContainText(/Launch type\s*Reward Launch, 3%/);
-  await expect(page.getByRole("region", { name: "Preview" })).toContainText("3% to holders");
+  await expect(summary(page)).toContainText(/Launch type\s*Reward Launch, 4%/);
+  await expect(page.getByRole("region", { name: "Preview" })).toContainText("4% to holders");
   await signButton(page).click();
   const launch = await prepared;
-  expect(launch.rewardTax).toEqual({ bps: 300, payout: "quote" });
+  expect(launch.rewardTax).toEqual({ bps: 400, payout: "quote" });
   await page.waitForURL(`**/coin/${launch.mint}`);
   expect(wallet.requests).toHaveLength(1);
-  await expect(page.getByText("3% of every transfer, paid out to holders in SOL")).toBeVisible();
+  await expect(page.getByText("4% of every transfer, paid out to holders in SOL")).toBeVisible();
   const card = page.getByRole("region", { name: "Holder rewards" });
   await expect(card).toContainText("The tax is sold for SOL in small slices, at most 0.5% of the coins in the market per run");
   await expect(card).toContainText("Waiting to be sold");
