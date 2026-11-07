@@ -305,8 +305,8 @@ describe("trading after Graduation", () => {
     const launched = (await getLaunch(coin.mint)).launch!;
     expect(launched).toMatchObject({ quote: { symbol: "USDC", decimals: 6 }, curve: { status: "graduated" } });
     expect(launched.graduation).toMatchObject({ pool: migration.pool.toBase58(), price: sell.quote.priceAfter });
-    // Whole USDC per whole coin: the pool opens with the 150 USDC the curve raised against the 206.9M coins it keeps.
-    expect(buy.quote.priceBefore / (150 / 206_900_000) - 1).toBeCloseTo(0, 3);
+    // Whole USDC per whole coin: the pool opens with the 150 USDC the curve raised against the 206.9B coins it keeps.
+    expect(buy.quote.priceBefore / (150 / 206_900_000_000) - 1).toBeCloseTo(0, 3);
     expect((await trades(coin.mint)).map((t) => [t.venue, t.side, t.quoteAmount])).toEqual([
       ["pool", "sell", sell.quote.amountOut],
       ["pool", "buy", USDC(20).toString()],
