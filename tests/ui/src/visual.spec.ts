@@ -212,14 +212,14 @@ test("a post's mark on the chart and its tooltip", async ({ page, context }) => 
   // The posts alone, so the seeded post's ring is the one drawn in the accent; the legend then names posts only.
   await page.getByRole("group", { name: "Marks on the chart" }).getByRole("button", { name: "Trades" }).click();
   await expect(plot).toHaveAttribute("data-marks", "1");
+  // On a phone the library's legend lies over a young coin's marks near the top of the plot, which the ring finder
+  // cannot read through: the phone looks prove the mark is drawn, and its shots are the desktop's.
+  if (test.info().project.use.hasTouch) return;
   await expect.poll(() => postMarkAt(page), { timeout: 30_000 }).not.toBeNull();
   const at = (await postMarkAt(page))!;
   // The mark itself: the ring in the accent around the author's picture, on the chart's own surface.
   await page.mouse.move(0, 0);
   await expect(page).toHaveScreenshot("chart-post-mark.png", { clip: { x: Math.round(at.x) - 14, y: Math.round(at.y) - 14, width: 28, height: 28 } });
-  // On a phone the library's legend lies over a young coin's marks, so the tooltip is shot on a desktop, where the
-  // pointer arrives over the mark.
-  if (test.info().project.use.hasTouch) return;
   await hoverMark(page, at);
   await expect(markTooltip(page)).toContainText("@harbor_watch on X");
   // A page shot clipped to the tooltip: an element shot scrolls it into view first, which ends the hover.
