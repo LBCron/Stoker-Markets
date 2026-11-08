@@ -64,7 +64,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "GET /launches",
         text: (
           <>
-            The board. <C>sort</C> (<C>new</C>, <C>trending</C>, <C>market_cap</C>, <C>graduation</C>), <C>q</C> (a search: a name or ticker containing it in any case, or a mint address starting with it; up to 64 characters), <C>quote</C>, <C>category</C> (<C>sol</C>, <C>stablecoin</C>, <C>tokenized_stock</C>, <C>rwa</C>, <C>wrapped</C>, <C>defi</C>, <C>leveraged</C>, <C>collectible</C>, <C>meme</C>, <C>community</C>), <C>issuer</C> (<C>xstocks</C>, <C>prestocks</C>, <C>tessera</C>, <C>backpack</C>: the stock issuer of the Quote Asset, finer than <C>category=tokenized_stock</C>), <C>status</C>, <C>limit</C>, <C>offset</C>.
+            The board. <C>sort</C> (<C>new</C>, <C>trending</C>, <C>market_cap</C>, <C>graduation</C>), <C>q</C> (a search: a name or ticker containing it in any case, or a mint address starting with it; up to 64 characters), <C>quote</C>, <C>category</C> (<C>sol</C>, <C>stablecoin</C>, <C>tokenized_stock</C>, <C>rwa</C>, <C>wrapped</C>, <C>defi</C>, <C>leveraged</C>, <C>collectible</C>, <C>meme</C>, <C>community</C>), <C>issuer</C> (<C>xstocks</C>, <C>prestocks</C>, <C>tessera</C>, <C>backpack</C>: the stock issuer of the Quote Asset, finer than <C>category=tokenized_stock</C>), <C>status</C>, <C>limit</C>, <C>offset</C>, and <C>fields</C>, extra figures by name: <C>fields=sparkline</C> adds each Launch&apos;s <C>sparkline</C>, its price over the last 24 hours as 24 points an hour apart in the Quote Asset, the latest last and equal to the price now, an empty list for a coin nobody has traded (the board&apos;s cards draw it).
           </>
         ),
       },

@@ -19,6 +19,17 @@ export const LaunchSort = z.enum(LAUNCH_SORTS);
 export type LaunchSort = z.infer<typeof LaunchSort>;
 
 export const LAUNCH_LIST_MAX = 100;
+
+/**
+ * Figures a list leaves out unless asked for by name in `fields` (comma-separated), because they cost a query of their own:
+ * `sparkline`, the price over the last 24 hours, for the board's cards (#161).
+ */
+export const LAUNCH_FIELDS = ["sparkline"] as const;
+export const LaunchField = z.enum(LAUNCH_FIELDS);
+export type LaunchField = z.infer<typeof LaunchField>;
+
+/** How many points a sparkline has: one an hour over the last day, the latest last. */
+export const SPARKLINE_POINTS = 24;
 export const LAUNCH_SEARCH_MAX = 64;
 
 /** Query string of GET /v1/launches. Filters combine; an unknown value is a 400, never silently ignored. */
@@ -37,6 +48,12 @@ export const LaunchListQuery = z.object({
   status: CurveStatus.optional(),
   /** Only this Creator's Launches. */
   creator: base58.optional(),
+  /** Extra figures for each Launch, by name: `fields=sparkline`. An unknown name is a 400. */
+  fields: z
+    .string()
+    .transform((s) => [...new Set(s.split(",").map((f) => f.trim()).filter(Boolean))])
+    .pipe(z.array(LaunchField))
+    .optional(),
   limit: z.coerce.number().int().min(1).max(LAUNCH_LIST_MAX).default(50),
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });

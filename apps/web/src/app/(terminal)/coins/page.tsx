@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { pageMeta } from "@/lib/meta";
-import { listLaunchQuotes, listLaunches } from "@/lib/api";
-import { boardQueryFrom } from "@/lib/board";
+import { getPlatform, listLaunchQuotes, listLaunches } from "@/lib/api";
+import { BOARD_VIEW_COOKIE, boardQueryFrom, boardViewFrom } from "@/lib/board";
 import { Board } from "@/components/Board";
 
 export const metadata: Metadata = pageMeta({
@@ -16,12 +17,20 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 export default async function CoinsPage({ searchParams }: Props) {
   const params = await searchParams;
   const query = boardQueryFrom(params);
-  const [board, quotes] = await Promise.all([listLaunches(query), listLaunchQuotes()]);
+  // The address's view, else the visitor's own (#161), so the server draws the shape the visitor sees from the first paint.
+  const view = boardViewFrom(params.view, (await cookies()).get(BOARD_VIEW_COOKIE)?.value);
+  const [board, quotes, platform] = await Promise.all([
+    listLaunches({ ...query, fields: view === "cards" ? ["sparkline"] : [] }),
+    listLaunchQuotes(),
+    getPlatform(),
+  ]);
   return (
     <Board
       initial={board.launches}
       initialMore={board.nextOffset !== null}
       initialQuery={query}
+      initialView={view}
+      platform={{ cluster: platform.cluster, rpcUrl: platform.rpcUrl }}
       quotes={quotes.quotes}
       renderedAt={Date.now()}
     />

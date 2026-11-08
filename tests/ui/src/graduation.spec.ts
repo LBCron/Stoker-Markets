@@ -97,8 +97,9 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
 
   // The board shows it graduated too.
   await page.goto("/coins");
-  const card = page.getByRole("link", { name: /Summit Push/ });
-  await expect(card).toContainText("Graduated");
+  // A row is a list item whose coin link is the coin cell alone (the CA and explorer controls close the row, #161).
+  const row = page.getByRole("list", { name: "Coins" }).getByRole("listitem").filter({ has: page.locator(`a[href="/coin/${mint}"]`) });
+  await expect(row).toContainText("Graduated");
   const [launch] = (await listLaunches()).filter((l) => l.mint === mint);
   expect(launch?.curve.status).toBe("graduated");
 });
