@@ -32,8 +32,8 @@ export const isOurSupplyAndSale = (supply: BN, totalBaseSell: BN) =>
 /** Rates use LaunchLab's 1e6 denominator: 5_000 is 0.5%. */
 export const RATE_DENOMINATOR = 1_000_000;
 
-/** The Reward Tax rates a Reward Launch may choose, in basis points: 1%, 3% or 5% (LaunchLab allows up to 5%). */
-export const REWARD_TAX_BPS = [100, 300, 500] as const;
+/** The Reward Tax rates a Reward Launch may choose, in basis points: 1%, 2%, 3%, 4% or 5% (LaunchLab allows up to 5%). */
+export const REWARD_TAX_BPS = [100, 200, 300, 400, 500] as const;
 export type RewardTaxBps = (typeof REWARD_TAX_BPS)[number];
 
 /** Curve rule groups: 0 pins a standard Launch, 1 a Reward Launch (a Token-2022 coin with a transfer fee). */
