@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CandlestickSeries, ColorType, CrosshairMode, createChart, type IChartApi, type ISeriesApi, type UTCTimestamp } from "lightweight-charts";
 import { CANDLE_INTERVALS, type Candle, type CandleInterval, type CandleList } from "@launchpad/contract";
-import { COIN_SUPPLY, formatPriceCompact } from "@/lib/format";
+import { formatPriceCompact } from "@/lib/format";
 import { Price } from "./Price";
 import styles from "./PriceChart.module.css";
 
@@ -11,7 +11,7 @@ const INTERVAL_LABEL: Record<CandleInterval, string> = {
   "1m": "1 minute", "5m": "5 minutes", "15m": "15 minutes", "1h": "1 hour", "4h": "4 hours", "1d": "1 day",
 };
 
-/** The smallest price step the chart draws: prices on a fresh curve are around 1e-8 of the Quote Asset per coin. */
+/** The smallest price step the chart draws: prices on a fresh 1T curve are around 1e-11 of the Quote Asset per coin. */
 const MIN_MOVE = 1e-15;
 
 /**
@@ -44,13 +44,15 @@ const compact = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits
  * the first trade; the market cap and the day's volume in its head, each shown once on the page.
  */
 export function PriceChart({
-  data, interval, onIntervalChange, price, quote, volume24h,
+  data, interval, onIntervalChange, price, marketCap, quote, volume24h,
 }: {
   /** The candles on screen; they can lag `interval` for a moment after the trader picks another one. */
   data: CandleList;
   interval: CandleInterval;
   onIntervalChange: (i: CandleInterval) => void;
   price: number | null;
+  /** The API's price times the coin's own supply, so a coin on an earlier launch shape keeps its figure; null without a price. */
+  marketCap: number | null;
   quote: string;
   /** Quote Asset traded over the last 24 hours, whole units. */
   volume24h: number;
@@ -129,9 +131,9 @@ export function PriceChart({
       <div className={styles.head}>
         <div className={styles.figures}>
           <h2 id="chart-title" className={styles.title}>Price</h2>
-          {price !== null && (
+          {marketCap !== null && (
             <p className={styles.cap}>
-              Market cap <Price value={price * COIN_SUPPLY} /> {quote}
+              Market cap <Price value={marketCap} /> {quote}
             </p>
           )}
           <p className={styles.cap}>

@@ -194,7 +194,7 @@ export function CoinMarket({
       <div className={`grid ${styles.market}`}>
         <div className={`col-8 ${styles.main}`}>
           <div className={styles.chart}>
-            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} volume24h={launch.market.volume24h.quote} />
+            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} marketCap={launch.market.marketCap?.quote ?? null} quote={quote} volume24h={launch.market.volume24h.quote} />
           </div>
           <div className={styles.progress}>
             <CurveProgress launch={launch} platform={platform} />

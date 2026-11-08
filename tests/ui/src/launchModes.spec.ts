@@ -45,12 +45,12 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
   await fillOptions(page, {
     firstBuy: "0.2",
     // Pasted the way people keep lists: commas, spaces or semicolons, thousands grouped, blank lines in between.
-    airdrop: `${recipients[0]}, 1,000,000\n\n${recipients[1]} 2500000\n${recipients[2]};500000.5`,
+    airdrop: `${recipients[0]}, 1,000,000,000\n\n${recipients[1]} 2500000000\n${recipients[2]};500000000.5`,
   });
   // The first buy's coins are quoted in the summary before anything is prepared, and the list is read as typed.
   await expect(summary(page)).toContainText(/First buy\s*0\.2 SOL/);
   await expect(summary(page)).toContainText(/You get\s*[\d,]+ PARTY \([\d.]+%\)/);
-  await expect(page.getByText(/^3 wallets get 4,000,000\.5 PARTY, 0\.4% of the supply\. You keep [\d,]+\. Sent from your wallet/)).toBeVisible();
+  await expect(page.getByText(/^3 wallets get 4,000,000,000\.5 PARTY, 0\.4% of the supply\. You keep [\d,]+\. Sent from your wallet/)).toBeVisible();
 
   const prepared = nextPrepared(page);
   await signButton(page).click();
@@ -75,7 +75,7 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
   // One approval signed every airdrop transaction.
   expect(wallet.requests).toHaveLength(1 + launch.airdrop!.transactions);
 
-  const amounts = [COINS(1_000_000), COINS(2_500_000), COINS(500_000) + 500_000n];
+  const amounts = [COINS(1_000_000_000), COINS(2_500_000_000), COINS(500_000_000) + 500_000n];
   for (const [i, r] of recipients.entries()) expect(await coinBalance(new PublicKey(r), launch.mint)).toBe(amounts[i]);
   expect(await coinBalance(wallet.keypair.publicKey, launch.mint)).toBe(bought - amounts.reduce((a, b) => a + b));
 
