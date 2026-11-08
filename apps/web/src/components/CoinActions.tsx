@@ -8,7 +8,7 @@ export type ExplorerCluster = { cluster: string; rpcUrl: string };
 
 /**
  * A coin's two quick actions wherever the board lists it (owner, 2026-11-07): copy its contract address, and open it on
- * the explorer. They sit over the row's or card's link (CoinRow, CoinCard), never inside it, so a press copies or opens
+ * the explorer. They sit over the row's or card's link (CoinRow, BoardCard), never inside it, so a press copies or opens
  * the explorer without also opening the coin's page.
  */
 export function CoinActions({ mint, symbol, platform, className = "" }: { mint: string; symbol: string; platform: ExplorerCluster; className?: string }) {

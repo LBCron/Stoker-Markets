@@ -1,121 +1,72 @@
 import Link from "next/link";
-import type { LaunchSummary } from "@launchpad/contract";
-import type { CSSProperties } from "react";
-import { formatDelta, formatMarketValue, kindOf, tintOf } from "@/lib/board";
-import { quoteTicker } from "@/lib/format";
-import { CoinActions, type ExplorerCluster } from "./CoinActions";
+import type { ReactNode } from "react";
+import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
-import { progressOf } from "./CoinRow";
 import { PairMark } from "./PairMark";
 import { Price } from "./Price";
-import { QuoteLogo } from "./QuoteLogo";
-import { RelativeTime } from "./RelativeTime";
-import { Sparkline } from "./Sparkline";
 import styles from "./CoinCard.module.css";
 
-/** The day's change beside the price: its sign and an arrow, so the direction never rests on colour alone; nothing before a trade. */
-function DayChange({ value }: { value: number | null }) {
-  const text = formatDelta(value);
-  if (text === null) return null;
-  const tone = value! > 0 ? styles.up : value! < 0 ? styles.down : styles.flat;
-  return (
-    <span className={`${styles.change} ${tone}`} title="Price change over the last 24 hours">
-      {value !== 0 && (
-        <svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true">
-          {value! > 0 ? <path d="M4 1 7.5 7H.5Z" fill="currentColor" /> : <path d="M4 7 .5 1h7Z" fill="currentColor" />}
-        </svg>
-      )}
-      <span className="visually-hidden">24h change </span>
-      {text}
-    </span>
-  );
-}
+/** What one coin's card shows, already in the card's terms: the landing's Trending reads it from a launch, the launch form's preview from the form. */
+export type CoinCardData = {
+  image: string | null;
+  symbol: string;
+  name: string;
+  /** The Quote Asset's ticker. */
+  quote: string;
+  /** Price of one whole coin in the Quote Asset; null shows a dash. */
+  price: number | null;
+  change24h: number | null;
+  /** How far the curve is toward its Graduation Target, 0 to 100. */
+  progress: number;
+  curve: "live" | "graduating" | "graduated";
+  /** The day's volume, formatted. */
+  volume: string;
+  rewardTaxBps: number | null;
+};
 
-/** Where the curve stands: its progress as the heat bar with the percentage, or the word for what has happened since. */
-function CurveState({ launch }: { launch: LaunchSummary }) {
-  const { status } = launch.curve;
-  if (status === "graduating") return <span className={`${styles.curve} ${styles.graduating}`}>Sold out, graduating</span>;
-  if (status === "graduated") return <span className={`${styles.curve} ${styles.graduated}`}>Graduated</span>;
-  const pct = progressOf(launch);
-  return (
-    <span className={styles.curve} title="How far the curve is toward its Graduation Target">
-      <span className="visually-hidden">Curve </span>
-      <span className={styles.track} aria-hidden>
-        {pct > 0 && <span className={styles.fill} style={{ width: `${pct}%` }} />}
-      </span>
-      <span className={styles.pct}>{pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}%</span>
-    </span>
-  );
+/** The curve's line: how far along a live curve is, or where a finished one went. */
+function curveWords(card: CoinCardData) {
+  if (card.curve === "graduating") return "Sold out, graduating";
+  if (card.curve === "graduated") return "Graduated, in its Raydium pool";
+  const pct = card.progress;
+  return `${pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}% of the way to graduation`;
 }
 
 /**
- * One coin as a card (#161; the owner picked A on 2026-11-07 with the line made compact, the picture larger, and the
- * copy and explorer controls on every card, and M on 2026-11-08 for the paired asset: its logo as a ringed badge on the
- * coin's picture and its colours as a soft light from the card's top right corner). The board's other shape,
- * for browsing, where the table is for scanning. The coin's link (its pair and name) is stretched over the whole card, so
- * a press anywhere opens its page, and the controls sit above it. It carries what the row does, in the row's formats:
- * the market cap as the headline with the day's line beside it, the price in the Quote Asset with the day's change, the
- * curve, and what it is paired with, its volume and its age under a hairline.
+ * One coin as a card (#133, after the research): the image with its fallback, the pair mark and the name, the price with
+ * the day's change, the curve as the one thing drawn, and the day's volume; every card the same rows, so a grid of six
+ * lines up. The pair is said once, by the mark. With `href` it is a link that lifts on hover (the landing's Trending);
+ * without, the same card standing still (the launch form's preview, #172).
  */
-export function CoinCard({ launch, now, platform }: { launch: LaunchSummary; now: number; platform: ExplorerCluster }) {
-  const quote = quoteTicker(launch.quote);
-  const { market } = launch;
-  const cap = market.marketCap ? formatMarketValue(market.marketCap, launch.quote) : "-";
-  // The paired asset's colours, which the card's glow reads.
-  const [tintA, tintB] = tintOf(launch.quote);
-  const tint = { "--tint-a": tintA, "--tint-b": tintB } as CSSProperties;
-  return (
-    <article className={`card ${styles.card}`} data-coin-card="" style={tint}>
-      <span className={styles.top}>
-        {/* The coin with what it is priced in on its corner, as an exchange draws a pair. */}
-        <span className={styles.imageWrap}>
-          <CoinImage src={launch.image} symbol={launch.symbol} size={56} className={styles.image} loading="lazy" />
-          <span className={styles.badge}><QuoteLogo quote={launch.quote} size={22} /></span>
+export function CoinCard({ card, href }: { card: CoinCardData; href?: string }) {
+  const body: ReactNode = (
+    <>
+      <div className={styles.top}>
+        <CoinImage src={card.image} symbol={card.symbol} size={44} className={styles.image} />
+        <div className={styles.titles}>
+          <span className={styles.pairBox}><PairMark base={card.symbol} quote={card.quote} size="md" /></span>
+          <span className={styles.name}>{card.name}</span>
+        </div>
+      </div>
+      <div className={styles.row}>
+        <span className={`t-figure ${styles.price}`}>{card.price === null ? "-" : <><Price value={card.price} /> {card.quote}</>}</span>
+        <Change value={card.change24h} />
+      </div>
+      <div className={styles.curve}>
+        <span className={styles.track} aria-hidden>
+          <span className={styles.fill} style={{ width: `${card.progress}%` }} />
         </span>
-        <Link href={`/coin/${launch.mint}`} className={styles.title}>
-          {/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */}
-          <span className={styles.pairBox}>
-            <PairMark base={launch.symbol} quote={quote} size="sm" />
-          </span>
-          <span className={styles.name}>
-            {launch.name}
-            {launch.rewardTax && <span className={styles.tax}>{launch.rewardTax.bps / 100}% tax</span>}
-          </span>
-        </Link>
-        <CoinActions mint={launch.mint} symbol={launch.symbol} platform={platform} className={styles.actions} />
-      </span>
-      {/* The headline with the day's line beside it. */}
-      <span className={styles.headline}>
-        <span className={styles.cap}>
-          <span className={styles.capValue}>{cap}</span>
-          <span className={styles.capLabel}>Market cap</span>
-        </span>
-        <span className={styles.spark}>
-          <Sparkline points={launch.sparkline} />
-        </span>
-      </span>
-      <span className={styles.price}>
-        {market.price === null ? <span className={styles.none}>No price yet</span> : <><Price value={market.price} /> {quote}</>}
-        <DayChange value={market.change24h} />
-      </span>
-      <CurveState launch={launch} />
-      <span className={styles.foot}>
-        <span className={styles.paired}>
-          <QuoteLogo quote={launch.quote} size={16} />
-          <span>
-            {quote} <span className={styles.kind}>{kindOf(launch.quote)}</span>
-          </span>
-        </span>
-        <span className={styles.facts}>
-          <span className={styles.fact}>
-            <span className={styles.factLabel}>24h vol </span>
-            {formatMarketValue(market.volume24h, launch.quote)}
-          </span>
-          <span className={`${styles.fact} ${styles.age}`}>
-            <RelativeTime iso={launch.createdAt} now={now} />
-          </span>
-        </span>
-      </span>
-    </article>
+        <span className={styles.meta}>{curveWords(card)}</span>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.meta}>{card.volume} traded today</span>
+        {card.rewardTaxBps !== null && <span className="tag tag-caution">{card.rewardTaxBps / 100}% to holders</span>}
+      </div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={`card card-raised ${styles.card} ${styles.link}`}>{body}</Link>
+  ) : (
+    <div className={`card card-raised ${styles.card}`}>{body}</div>
   );
 }

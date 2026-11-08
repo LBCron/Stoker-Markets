@@ -1,6 +1,6 @@
 import type { LaunchSummary } from "@launchpad/contract";
 import type { ExplorerCluster } from "./CoinActions";
-import { CoinCard } from "./CoinCard";
+import { BoardCard } from "./BoardCard";
 import styles from "./CoinGrid.module.css";
 
 /**
@@ -13,7 +13,7 @@ export function CoinGrid({ launches, now, platform, busy = false }: { launches: 
     <ul className={styles.grid} aria-busy={busy} aria-label="Coins">
       {launches.map((l) => (
         <li key={l.mint} className={styles.item}>
-          <CoinCard launch={l} now={now} platform={platform} />
+          <BoardCard launch={l} now={now} platform={platform} />
         </li>
       ))}
     </ul>
