@@ -1,11 +1,11 @@
-// A Reward Launch (#16): a Token-2022 coin whose every transfer withholds a Reward Tax of 1%, 3% or 5% for its holders.
+// A Reward Launch (#16): a Token-2022 coin whose every transfer withholds a Reward Tax of 1%, 2%, 3%, 4% or 5% for its holders.
 // LaunchLab's own authority holds the coin's fee-config authority until Graduation, so nobody can change the tax; the
 // migration hands it to the operations wallet, which gives it up for good.
 import { describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint, getTransferFeeConfig } from "@solana/spl-token";
 import { launchlabPdas } from "@launchpad/chain";
-import { LaunchSummary, PreparedLaunch, TradeQuote } from "@launchpad/contract";
+import { LaunchSummary, PreparedLaunch, REWARD_TAX_RATES, type RewardTaxBps, TradeQuote } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { connection, deliverWebhook, env, fundedWallet, getLaunch, prepare, quote, signAndSend, tokenBalance, trade } from "./client";
 
@@ -13,7 +13,7 @@ const withheld = (amount: bigint, bps: number) => (amount * BigInt(bps) + 9_999n
 /** A Reward Launch's coin is a Token-2022 mint, so its accounts live under that program. */
 const coinsOf = (mint: string, owner: { publicKey: PublicKey }) => tokenBalance(getAssociatedTokenAddressSync(new PublicKey(mint), owner.publicKey, false, TOKEN_2022_PROGRAM_ID));
 
-async function rewardCoin(rewardTax: 100 | 300 | 500, quoteMint?: string, firstBuy?: string) {
+async function rewardCoin(rewardTax: RewardTaxBps, quoteMint?: string, firstBuy?: string) {
   const creator = await fundedWallet(10);
   const res = await prepare({ creator: creator.publicKey.toBase58(), rewardTax: String(rewardTax), symbol: `RW${rewardTax}`, ...(quoteMint ? { quoteMint } : {}), ...(firstBuy ? { firstBuy } : {}) });
   if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
@@ -28,7 +28,7 @@ async function taxConfig(mint: string) {
 }
 
 describe("a Reward Launch", () => {
-  it.each([100, 300, 500] as const)("launches with a %i bps Reward Tax on SOL, as a Token-2022 coin nobody can retax", async (bps) => {
+  it.each(REWARD_TAX_RATES)("launches with a %i bps Reward Tax on SOL, as a Token-2022 coin nobody can retax", async (bps) => {
     const { prepared, mint } = await rewardCoin(bps);
     expect(prepared.rewardTax).toEqual({ bps, payout: "coin" });
     const account = await connection().getAccountInfo(new PublicKey(mint));
@@ -105,7 +105,7 @@ describe("a Reward Launch", () => {
 
   it("refuses a tax at any other rate", async () => {
     const creator = await fundedWallet();
-    for (const rewardTax of ["200", "600", "abc"]) {
+    for (const rewardTax of ["250", "600", "abc"]) {
       const res = await prepare({ creator: creator.publicKey.toBase58(), rewardTax });
       expect(res.status, rewardTax).toBe(400);
     }
