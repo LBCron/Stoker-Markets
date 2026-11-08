@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
   allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins, listLaunches,
-  QUOTES, SEED_CREATOR, SEED_HOLDER, test,
+  markTooltip, postMarkAt, QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { chooseQuote, firstBuyField, signButton, signing, summary } from "./launchPage";
@@ -194,6 +194,22 @@ test("coin page with trades", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-traded.png", tradedDynamic);
+});
+
+test("a post's mark on the chart and its tooltip", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
+  const plot = page.locator("[data-chart]");
+  await expect(plot).toHaveAttribute("data-chart", "ready", { timeout: 60_000 });
+  // The posts alone, so the seeded post's ring is the one drawn in the accent; the legend then names posts only.
+  await page.getByRole("group", { name: "Marks on the chart" }).getByRole("button", { name: "Trades" }).click();
+  await expect(plot).toHaveAttribute("data-marks", "1");
+  await expect.poll(() => postMarkAt(page), { timeout: 30_000 }).not.toBeNull();
+  const at = (await postMarkAt(page))!;
+  // The library shows a mark's tooltip as the pointer arrives over it.
+  await page.mouse.move(at.x - 30, at.y);
+  await page.mouse.move(at.x, at.y, { steps: 4 });
+  await expect(markTooltip(page)).toContainText("@harbor_watch on X");
+  await expect(markTooltip(page)).toHaveScreenshot("chart-post-tooltip.png");
 });
 
 test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => {
