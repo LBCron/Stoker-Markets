@@ -1,7 +1,8 @@
 /*
   One coin as a card (#161). The coin's link is stretched over the card, with the copy and explorer controls above it;
-  the paired asset's logo is drawn large and faint behind the right side. Every card in a row is the same height (the
-  grid stretches them), and the parts sit in the same places on every card, so the eye reads only the differences.
+  the paired asset is its logo on the coin's picture and its colours as the card's light (below). Every card in a row is
+  the same height (the grid stretches them), and the parts sit in the same places on every card, so the eye reads only
+  the differences.
   Figures are the mono; the name beside the pair is a word.
 */
 .card {
@@ -22,43 +23,6 @@
     background: var(--hover);
     border-color: var(--line-strong);
   }
-}
-
-/*
-  The paired asset behind the figures: a 176px disc cut by the card's right edge, faint, fading out toward the text. The
-  box stops at the card's edge (132px of the disc's 176px) and the disc is cut from it by clip-path, so no box runs past
-  the card and none past a phone's viewport (the suite's overflow check counts clipped boxes too).
-*/
-.art {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  right: 0;
-  width: 132px;
-  height: 176px;
-  transform: translateY(-46%);
-  object-fit: cover;
-  object-position: left center;
-  clip-path: circle(88px at 88px 50%);
-  background: var(--plate);
-  opacity: 0.2;
-  pointer-events: none;
-  mask-image: linear-gradient(to right, transparent 0%, #000 55%);
-}
-
-/* An asset without a logo: its ticker's first letter, centred on the disc. */
-.artLetter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: content-box;
-  width: 88px;
-  padding-left: 44px;
-  font-family: var(--font-display);
-  font-size: var(--text-display);
-  font-weight: 800;
-  line-height: 1;
-  color: var(--accent-strong);
 }
 
 /* The coin: its picture, then the pair over the name, then the controls at the far end. */
@@ -292,4 +256,49 @@
 
 .age {
   color: var(--ink-3);
+}
+
+/*
+  The paired asset (the owner's pick M, 2026-11-08): its colours as a soft light from the card's top right corner, the
+  first fading to the second at the foot, with a fine line in the same colours along the top edge; its logo as a badge
+  on the coin's picture. Nothing sits under the figures.
+*/
+.card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(90% 75% at 100% 0%, color-mix(in srgb, var(--tint-a) 26%, transparent), transparent 70%),
+    radial-gradient(60% 55% at 100% 100%, color-mix(in srgb, var(--tint-b) 12%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  left: 30%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--tint-a) 55%, var(--tint-b));
+  pointer-events: none;
+}
+
+/* The badge: the asset's logo on the corner of the coin's picture, ringed in the card's surface. */
+.imageWrap {
+  position: relative;
+  flex: none;
+  display: flex;
+}
+
+.badge {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
 }

@@ -166,3 +166,15 @@ export function formatMarketValue(v: MarketValue, quote: Pick<QuoteRef, "mint" |
   if (v.sol !== null) return `${compact(v.sol)} SOL`;
   return `${compact(v.quote)} ${quoteTicker(quote)}`;
 }
+
+/**
+ * A Quote Asset's brand colours for its card's glow (#161, the owner's pick M of 2026-11-08), by mint, never by name:
+ * SOL's purple and green, USDC's blue, NVIDIA's green. Any other asset takes the site's accent until the Quote Registry
+ * carries a colour of its own.
+ */
+const ASSET_TINTS: Record<string, readonly [string, string]> = {
+  So11111111111111111111111111111111111111112: ["#9945ff", "#14f195"],
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: ["#2775ca", "#5fa8f5"],
+  Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh: ["#76b900", "#b4e34f"],
+};
+export const tintOf = (q: Pick<QuoteRef, "mint">) => ASSET_TINTS[q.mint] ?? (["var(--accent)", "var(--accent)"] as const);

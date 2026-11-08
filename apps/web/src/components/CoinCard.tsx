@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
-import { formatDelta, formatMarketValue, kindOf } from "@/lib/board";
+import type { CSSProperties } from "react";
+import { formatDelta, formatMarketValue, kindOf, tintOf } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
-import { AssetArt } from "./AssetArt";
 import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
 import { progressOf } from "./CoinRow";
@@ -49,8 +49,9 @@ function CurveState({ launch }: { launch: LaunchSummary }) {
 }
 
 /**
- * One coin as a card (#161; the owner picked A on 2026-11-07 with the line made compact, the picture larger, the paired
- * asset's logo drawn large behind the card, and the copy and explorer controls on every card). The board's other shape,
+ * One coin as a card (#161; the owner picked A on 2026-11-07 with the line made compact, the picture larger, and the
+ * copy and explorer controls on every card, and M on 2026-11-08 for the paired asset: its logo as a ringed badge on the
+ * coin's picture and its colours as a soft light from the card's top right corner). The board's other shape,
  * for browsing, where the table is for scanning. The coin's link (its pair and name) is stretched over the whole card, so
  * a press anywhere opens its page, and the controls sit above it. It carries what the row does, in the row's formats:
  * the market cap as the headline with the day's line beside it, the price in the Quote Asset with the day's change, the
@@ -60,12 +61,17 @@ export function CoinCard({ launch, now, platform }: { launch: LaunchSummary; now
   const quote = quoteTicker(launch.quote);
   const { market } = launch;
   const cap = market.marketCap ? formatMarketValue(market.marketCap, launch.quote) : "-";
+  // The paired asset's colours, which the card's glow reads.
+  const [tintA, tintB] = tintOf(launch.quote);
+  const tint = { "--tint-a": tintA, "--tint-b": tintB } as CSSProperties;
   return (
-    <article className={`card ${styles.card}`} data-coin-card="">
-      {/* The paired asset, drawn large and faint behind the figures: what this coin is priced in, at a glance. */}
-      <AssetArt quote={launch.quote} className={styles.art} letterClassName={styles.artLetter} />
+    <article className={`card ${styles.card}`} data-coin-card="" style={tint}>
       <span className={styles.top}>
-        <CoinImage src={launch.image} symbol={launch.symbol} size={56} className={styles.image} loading="lazy" />
+        {/* The coin with what it is priced in on its corner, as an exchange draws a pair. */}
+        <span className={styles.imageWrap}>
+          <CoinImage src={launch.image} symbol={launch.symbol} size={56} className={styles.image} loading="lazy" />
+          <span className={styles.badge}><QuoteLogo quote={launch.quote} size={22} /></span>
+        </span>
         <Link href={`/coin/${launch.mint}`} className={styles.title}>
           {/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */}
           <span className={styles.pairBox}>
@@ -78,7 +84,7 @@ export function CoinCard({ launch, now, platform }: { launch: LaunchSummary; now
         </Link>
         <CoinActions mint={launch.mint} symbol={launch.symbol} platform={platform} className={styles.actions} />
       </span>
-      {/* The headline with the day's line beside it, on the left, clear of the asset drawn behind the right side. */}
+      {/* The headline with the day's line beside it. */}
       <span className={styles.headline}>
         <span className={styles.cap}>
           <span className={styles.capValue}>{cap}</span>

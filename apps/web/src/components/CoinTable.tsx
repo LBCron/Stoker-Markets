@@ -21,7 +21,7 @@ export function CoinTable({ launches, now, platform, label = "Coins", busy = fal
       {/* The names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
       <div className={styles.columns} aria-hidden>
         {COLUMNS.map((c) => (
-          <span key={c.key} className={"numeric" in c && c.numeric ? styles.numeric : undefined}>{c.name}</span>
+          <span key={c.key} className={"numeric" in c && c.numeric ? styles.numeric : c.key === "curve" ? styles.curveHead : undefined}>{c.name}</span>
         ))}
       </div>
       <ul className={styles.rows} aria-busy={busy} aria-label={label}>
