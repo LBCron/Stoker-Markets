@@ -132,7 +132,8 @@ test("launch options explain what is wrong before anything is prepared", async (
   await expect(page.getByText(`Line 2: this wallet is already on line 1.`)).toBeVisible();
   await fillOptions(page, { airdrop: `${wallet.keypair.publicKey.toBase58()}, 1000` });
   await expect(page.getByText(/^Line 1: that's your own wallet/)).toBeVisible();
-  await fillOptions(page, { airdrop: `${a}, 900000000\n${b}, 1` });
+  // 900B coins: more than any First Buy gets, since a curve sells 793.1B of a coin's 1T.
+  await fillOptions(page, { airdrop: `${a}, 900000000000\n${b}, 1` });
   await expect(page.getByText("The airdrop gives away more coins than your first buy gets. Buy more or airdrop less.")).toBeVisible();
 
   await signButton(page).click();
