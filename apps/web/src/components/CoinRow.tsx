@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import { formatDelta, formatMarketValue } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
+import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
 import { PairMark } from "./PairMark";
 import { Price } from "./Price";
@@ -10,7 +11,7 @@ import { RelativeTime } from "./RelativeTime";
 import styles from "./CoinRow.module.css";
 
 /** How far the curve is toward its Graduation Target, to a hundredth of a percent as CurveProgress has it; a sold-out curve is done. */
-function progressOf(launch: LaunchSummary) {
+export function progressOf(launch: LaunchSummary) {
   if (launch.curve.status !== "live") return 100;
   const target = BigInt(launch.graduationTarget);
   return target === 0n ? 0 : Math.min(100, Number((BigInt(launch.curve.raised) * 10_000n) / target) / 100);
@@ -31,6 +32,8 @@ export const COLUMNS = [
   { name: "Curve", key: "curve" },
   { name: "Holders", key: "holders", numeric: true },
   { name: "Age", key: "age", numeric: true },
+  // The coin's quick actions (copy the address, open the explorer), unnamed: the controls name themselves.
+  { name: "", key: "actions" },
 ] as const;
 
 /** A price change with its sign and an arrow, so the direction never rests on colour alone; a dash where nothing has traded yet. */
@@ -51,19 +54,20 @@ function Delta({ value, label, className = "" }: { value: number | null; label: 
 }
 
 /**
- * One coin as a terminal row: the whole row is the link to its page. The pair is the unit (docs/design/layout.md): the
+ * One coin as a terminal row: the whole row opens its page (the coin cell is the link, stretched over the row, so its
+ * name is the pair and the coin's name alone), and the copy and explorer controls at its end sit above that link. The pair is the unit (docs/design/layout.md): the
  * lockup draws both halves (the coin's image with the Quote Asset's logo over its corner) and the mark writes them
  * (BASE/QUOTE), with the name under. The figures are right-aligned tabular mono under their column names; the curve is
  * the one thing drawn, in the heat ramp, and a graduated coin says so in the gain colour. A Reward Launch's tax sits
  * by its name, where the MODE column was.
  */
-export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number }) {
+export function CoinRow({ launch, now, platform }: { launch: LaunchSummary; now: number; platform: ExplorerCluster }) {
   const quote = quoteTicker(launch.quote);
   const { status } = launch.curve;
   const pct = progressOf(launch);
   return (
-    <Link href={`/coin/${launch.mint}`} className={styles.row}>
-      <span className={styles.coin}>
+    <div className={styles.row}>
+      <Link href={`/coin/${launch.mint}`} className={styles.coin}>
         <span className={styles.lockup}>
           <CoinImage src={launch.image} symbol={launch.symbol} size={24} className={styles.image} loading="lazy" />
           <span className={styles.quoteLogo}><QuoteLogo quote={launch.quote} size={14} /></span>
@@ -76,7 +80,7 @@ export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number })
           {launch.name}
           {launch.rewardTax && <span className={styles.tax}>{launch.rewardTax.bps / 100}% tax</span>}
         </span>
-      </span>
+      </Link>
       <span className={`${styles.num} ${styles.price}`} data-label="Price">{launch.market.price === null ? "-" : <Price value={launch.market.price} />}</span>
       <Delta value={launch.market.change5m} label="5m" className={styles.delta5m} />
       <Delta value={launch.market.change24h} label="24h" className={styles.delta24h} />
@@ -102,7 +106,9 @@ export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number })
       <span className={`${styles.num} ${styles.when}`} data-label="Age">
         <RelativeTime iso={launch.createdAt} now={now} />
       </span>
+      {/* The last cell at a desktop; on a phone they close the figures' line, so the line keeps its width. */}
+      <CoinActions mint={launch.mint} symbol={launch.symbol} platform={platform} className={styles.actions} />
       </span>
-    </Link>
+    </div>
   );
 }
