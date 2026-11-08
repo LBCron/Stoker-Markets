@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import BN from "bn.js";
 import { cpmmCoder, launchlabCoder } from "./coder";
 import type { CurveReserves, Side, TradeFees } from "./curve";
-import { LAUNCH_SHAPE, REWARD_TAX_BPS } from "./shape";
+import { isOurSupplyAndSale, LAUNCH_SHAPE, REWARD_TAX_BPS } from "./shape";
 import type { Programs } from "./programs";
 import type { CurveStatus } from "./trade";
 
@@ -58,9 +58,9 @@ export type LaunchCreated = {
   totalBaseSell: BN;
   graduationTargetRaw: BN;
   /**
-   * Whether the launch has the shape our curve rules pin on-chain (LAUNCH_SHAPE, no vesting; an SPL coin, or a Token-2022
-   * coin with a Reward Tax at one of our rates). A launch against a GlobalConfig our rules don't cover yet can have any
-   * shape (ADR 0005).
+   * Whether the launch has the shape our curve rules pin on-chain (LAUNCH_SHAPE, or the supply and sale of an earlier
+   * shape, EARLIER_LAUNCH_SHAPES; no vesting; an SPL coin, or a Token-2022 coin with a Reward Tax at one of our rates).
+   * A launch against a GlobalConfig our rules don't cover yet can have any shape (ADR 0005).
    */
   standardShape: boolean;
   /** The Reward Tax of a Reward Launch, in basis points; null for a standard coin. */
@@ -379,8 +379,7 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
       const standardShape =
         (!token2022 || rewardShape) &&
         data.base_mint_param.decimals === LAUNCH_SHAPE.decimals &&
-        curve.supply.eq(LAUNCH_SHAPE.supply) &&
-        curve.total_base_sell.eq(LAUNCH_SHAPE.totalBaseSell) &&
+        isOurSupplyAndSale(curve.supply, curve.total_base_sell) &&
         curve.migrate_type === LAUNCH_SHAPE.migrateType &&
         vesting.total_locked_amount.isZero() && vesting.cliff_period.isZero() && vesting.unlock_period.isZero() &&
         // The original `initialize` has no fee-on argument, so only the rest of its shape is checked.

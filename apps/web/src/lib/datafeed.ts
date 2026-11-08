@@ -3,7 +3,6 @@ import { getCandles, getMarks } from "./api";
 import type { Bar, Datafeed, LibrarySymbolInfo, PeriodParams, ResolutionString } from "./charting";
 import { toChartMarks, type MarksShown, type MarkTarget } from "./chartMarks";
 import { chartLook } from "./chartTheme";
-import { COIN_SUPPLY } from "./format";
 
 /**
  * The coin page's datafeed for Advanced Charts (#126): the library asks, on its own schedule, for a coin's candles from
@@ -61,7 +60,8 @@ function priceScale(value: number | null) {
 
 const later = (fn: () => void) => void setTimeout(fn, 0);
 
-type Coin = { mint: string; symbol: string; quote: string; quoteDecimals: number };
+/** `supply` is the coin's own in whole coins (1T since #166, 1B for an earlier coin): what a market cap is the price times. */
+type Coin = { mint: string; symbol: string; quote: string; quoteDecimals: number; supply: number };
 
 type Live = {
   /** The coin's latest price in whole Quote Asset units, which sizes the price scale; null before the first. */
@@ -126,7 +126,7 @@ export function createDatafeed(coin: Coin, live: Live) {
     if (!series) return null;
     const usd = series.currency === "usd" ? rates.get(ticker) : 1;
     if (usd === undefined) return null;
-    return { value: (series.measure === "marketCap" ? COIN_SUPPLY : 1) * usd, volume: usd };
+    return { value: (series.measure === "marketCap" ? coin.supply : 1) * usd, volume: usd };
   }
 
   function describe(series: ChartSeries) {

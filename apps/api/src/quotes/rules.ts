@@ -6,7 +6,7 @@
 
 import BN from "bn.js";
 import {
-  closedLaunchConstraints, graduationBandOf, rewardLaunchConstraints, sameConstraints, standardLaunchConstraints, type RuleConstraint,
+  closedLaunchConstraints, graduationBandOf, pinsLaunchShape, rewardLaunchConstraints, sameConstraints, standardLaunchConstraints, type RuleConstraint,
 } from "@launchpad/chain";
 
 /** The two kinds of Launch a curve rule admits, each as its own group: a standard coin, and a Reward Launch's taxed coin. */
@@ -41,8 +41,13 @@ export function needsRecentre(current: Band, target: bigint) {
 
 const contains = (b: Band, target: bigint) => b.min <= target && target <= b.max;
 
+/**
+ * The Graduation Targets a rule group accepts for a launch on our launch shape, or null when it accepts none: a closed
+ * group, no group, or a group that still pins an earlier shape (the 1B one, until the refresh rewrites it after #166),
+ * which would refuse such a launch on-chain whatever its target.
+ */
 export function bandOf(constraints: RuleConstraint[] | null): Band | null {
-  const band = constraints && graduationBandOf(constraints);
+  const band = constraints && pinsLaunchShape(constraints) && graduationBandOf(constraints);
   return band ? { min: BigInt(band.min.toString()), max: BigInt(band.max.toString()) } : null;
 }
 

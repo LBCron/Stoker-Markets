@@ -2,7 +2,8 @@ export { programsFor, METADATA_PROGRAM, WSOL_MINT, type Cluster, type Programs }
 export { launchlabPdas, cpmmPdas, lockPdas, metadataPda, sortMints } from "./pda";
 export { launchlabCoder, cpmmCoder, lockCoder } from "./coder";
 export {
-  LAUNCH_SHAPE, RATE_DENOMINATOR, REWARD_TAX_BPS, RULE_GROUP, RuleField, RuleOp, closedLaunchConstraints, graduationBandOf, rewardLaunchConstraints,
+  EARLIER_LAUNCH_SHAPES, LAUNCH_SHAPE, RATE_DENOMINATOR, REWARD_TAX_BPS, RULE_GROUP, RuleField, RuleOp, closedLaunchConstraints, graduationBandOf,
+  isOurSupplyAndSale, pinsLaunchShape, rewardLaunchConstraints,
   sameConstraints, standardLaunchConstraints,
   type GraduationBand, type RewardTaxBps, type RuleConstraint,
 } from "./shape";

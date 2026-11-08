@@ -149,6 +149,14 @@ Run on 2026-10-14: mainnet had 613 GlobalConfigs by then, 586 priced by Jupiter.
 
 Keep the site's launch page closed (or the DNS unpublished) until that count is right.
 
+### The 1T launch shape (#166)
+
+Every curve rule pins the launch shape as well as the target (ADR 0005), and since #166 the shape is 1,000,000,000,000 coins at 6 decimals with 793,100,000,000 sold on the curve (it was 1,000,000,000 with 793,100,000).
+The first Quote Registry refresh after the API with the new shape is deployed rewrites every priced Quote Asset's two groups, one transaction each, at most 120 a run: on mainnet's 585 launchable assets that is five runs, about 25 minutes on the crons or five runs by hand (`POST /v1/operator/jobs/quote-registry`), and about 585 transaction fees (about 0.003 SOL; the rule accounts exist already, so no new rent).
+Until an asset's groups are rewritten the API lists it as not launchable and refuses a launch against it with "open once its launch rules are set on-chain", so nothing fails on-chain in between; check `ruleWrites` and `ruleWriteFailures` on `GET /v1/operator/jobs?job=quote-registry` until a run writes nothing, and `GET /v1/quotes` lists 585 launchable again.
+The mainnet API listed no launch on 2026-11-07, so deployed before go-live every mainnet coin, the Platform Token included, has the 1T supply; the devnet rehearsal's coins keep the 1B one, which the Indexer still takes as ours.
+The Reward Rounds' rules are absolute coin amounts (version 1: a wallet holds at least 10,000 coins and a round opens at 100,000 coins of tax, 0.001% and 0.01% of a 1B supply), so on a 1T coin they are a thousandth of those shares (on the test stack a 1,000-lamport buy of a fresh 1T coin gets 1.5 million coins, past the minimum, so every dust wallet would be paid and a round would open on almost any tax); announcing a version 2 with 10,000,000 and 100,000,000 coins (the same shares of 1T) through `POST /v1/operator/rewards/rules` before the first Reward Launch keeps them, and is the owner's call (#166).
+
 ## 7. The Helius webhook
 
 The Indexer reads Helius payloads as raw `getTransaction` JSON, so the webhook must be of type **raw** (the enhanced type has a different shape and is not decoded); transaction types: all. Deliveries carry `Authorization: <HELIUS_WEBHOOK_SECRET>`, and the API answers 500 for a batch it could not fully index, so Helius delivers it again and the rest are no-ops. Endpoint: `POST https://api.<domain>/v1/webhooks/helius`.

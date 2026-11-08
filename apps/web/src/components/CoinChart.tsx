@@ -7,7 +7,7 @@ import { LIBRARY_PATH, loadChartingLibrary, type ChartWidget } from "@/lib/chart
 import { chartLook, chartOverrides, chartStudiesOverrides, paintChart, shareFonts } from "@/lib/chartTheme";
 import type { MarksShown, MarkTarget } from "@/lib/chartMarks";
 import { createDatafeed, intervalOf, RESOLUTION, tickerOf, type ChartCurrency, type ChartMeasure, type ChartSeries } from "@/lib/datafeed";
-import { formatPriceCompact } from "@/lib/format";
+import { COIN_DECIMALS, formatPriceCompact } from "@/lib/format";
 import { Price } from "./Price";
 import styles from "./CoinChart.module.css";
 
@@ -98,7 +98,7 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
     let gone = false;
     let chart: ChartWidget | null = null;
     const feed = createDatafeed(
-      { mint: launch.mint, symbol: launch.symbol, quote, quoteDecimals: launch.quote.decimals },
+      { mint: launch.mint, symbol: launch.symbol, quote, quoteDecimals: launch.quote.decimals, supply: Number(BigInt(launch.supply) / 10n ** BigInt(COIN_DECIMALS)) },
       {
         price: () => live.current.price,
         usdPerQuote: () => live.current.usdPerQuote,

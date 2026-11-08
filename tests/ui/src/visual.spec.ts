@@ -256,7 +256,7 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await panel.getByRole("button", { name: "Edit" }).click();
   await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
   // The test wallet holds none of this coin, so a sell shows the over-balance state.
-  await panel.getByLabel("You pay").fill("1000000");
+  await panel.getByLabel("You pay").fill("1000000000");
   await expect(panel.getByText("Your wallet has no HRBR.", { exact: true })).toBeVisible();
   await expect(panel.getByText("You get about")).toBeVisible();
   // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
@@ -464,7 +464,7 @@ async function launchFormWithOptions(page: Page, airdrop: string) {
 
 test("launch form with a first buy and an airdrop", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
-  await launchFormWithOptions(page, OPTION_WALLETS.map((w, i) => `${w}, ${(i + 1) * 250_000}`).join("\n"));
+  await launchFormWithOptions(page, OPTION_WALLETS.map((w, i) => `${w}, ${(i + 1) * 250_000_000}`).join("\n"));
   await expect(summary(page)).toContainText("You get");
   await expect(page.getByText(/^3 wallets get/)).toBeVisible();
   await copyCheckSettled(page);
@@ -497,7 +497,7 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its signing", 
 
 test("launch form with a mistake in the airdrop list", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
-  await launchFormWithOptions(page, `${OPTION_WALLETS[0]}, 250000\n${OPTION_WALLETS[0]}, 500000`);
+  await launchFormWithOptions(page, `${OPTION_WALLETS[0]}, 250000000\n${OPTION_WALLETS[0]}, 500000000`);
   await expect(page.getByText("Line 2: this wallet is already on line 1.")).toBeVisible();
   await snap(page, "launch-options-error.png");
   expect(wallet.requests).toHaveLength(0);
@@ -505,7 +505,7 @@ test("launch form with a mistake in the airdrop list", async ({ page, wallet }) 
 
 test("launch the network refused", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
-  await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000`).join("\n"));
+  await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000000`).join("\n"));
   await expect(summary(page)).toContainText("You get");
   const held = wallet.holdNext();
   await signButton(page).click();

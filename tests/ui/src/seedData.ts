@@ -5,7 +5,7 @@ import { fixedKeypair, type LaunchFields } from "./fixtures";
 /** Their Creator: a key that is the same every run, so the visual tests can connect as them. */
 export const AIRDROP_CREATOR = fixedKeypair("airdrop creator");
 export const AIRDROP_WALLETS = [1, 2, 3].map((n) => fixedKeypair(`airdrop wallet ${n}`).publicKey.toBase58());
-const airdrop = AIRDROP_WALLETS.map((wallet, i) => ({ wallet, amount: `${(i + 1) * 1_000_000}000000` }));
+const airdrop = AIRDROP_WALLETS.map((wallet, i) => ({ wallet, amount: `${(i + 1) * 1_000_000_000}000000` }));
 
 /** 0.1 SOL, in lamports. */
 const FIRST_BUY = "100000000";

@@ -22,6 +22,10 @@ _Avoid_: Migration (that is Raydium's mechanism), bonding, completion
 The amount of Quote Asset a Launch's curve must raise to graduate, fixed once at launch as the equivalent of a set amount of SOL.
 _Avoid_: Bonding target, market cap target, fund raising
 
+**Launch Shape**:
+What every new Launch's coin and curve are, pinned on-chain by our curve rules: a supply of 1 trillion coins at 6 decimals, 793.1 billion of them sold on the curve, the rest moving to the pool at Graduation, with no vesting (since #166; coins launched before it keep the 1 billion shape, 793.1 million sold).
+_Avoid_: Tokenomics, curve settings
+
 **Quote Asset**:
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
 _Avoid_: Pair token, base, collateral
