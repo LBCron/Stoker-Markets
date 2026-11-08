@@ -220,13 +220,23 @@
   white-space: nowrap;
 }
 
+/*
+ * The figure received is one unit: where the row is too narrow for it beside its label (a 1T coin's amount on a phone),
+ * the whole figure moves under the label, right-aligned, rather than leaving its ticker on a line of its own.
+ */
+.quote dl > .receive {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
 .receive dt {
-  flex-shrink: 0;
   color: var(--ink);
   font-weight: 600;
 }
 
 .receive dd {
+  margin-left: auto;
+  white-space: nowrap;
   font-size: var(--text-body);
   font-weight: 600;
 }
