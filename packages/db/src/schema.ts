@@ -17,7 +17,7 @@ export const launches = pgTable(
     supply: numeric("supply", { precision: 40, scale: 0 }).notNull(),
     totalBaseSell: numeric("total_base_sell", { precision: 40, scale: 0 }).notNull(),
     graduationTarget: numeric("graduation_target", { precision: 40, scale: 0 }).notNull(),
-    /** A Reward Launch's Reward Tax in basis points (100, 300 or 500); null for a standard coin. */
+    /** A Reward Launch's Reward Tax in basis points (100, 200, 300, 400 or 500); null for a standard coin. */
     rewardTaxBps: integer("reward_tax_bps"),
     /**
      * A Reward Launch's Payout Asset (ADR 0006, #43): its Holder Rewards are paid in the coin itself, or in its Quote

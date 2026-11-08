@@ -82,10 +82,12 @@ export async function prepare(form: LaunchForm) {
   const tag = uniqueTag();
   const fields = { name: `Tracer ${tag}`, symbol: `T${tag}`, description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...rest };
   if (!exact) {
-    const short = tag.slice(0, 4);
+    // As much of the tag as the limits (32 and 10) leave room for, never fewer than four: Copy Protection also refuses a
+    // near copy (one edit apart, after folding look-alikes such as 8 and B), and two four-character tails were one edit
+    // apart often enough to fail a run (PAYSWE68 against PAYSEE6B, 2026-11-07); six make it about a thousand times rarer.
     // An empty name or ticker stays empty: a test that sends one wants it refused.
-    if (rest.name) fields.name = `${rest.name} ${short}`;
-    if (rest.symbol) fields.symbol = `${rest.symbol}${short.slice(0, Math.max(0, 10 - rest.symbol.length))}`;
+    if (rest.name) fields.name = `${rest.name} ${tag.slice(0, Math.max(4, 31 - rest.name.length))}`;
+    if (rest.symbol) fields.symbol = `${rest.symbol}${tag.slice(0, Math.max(0, 10 - rest.symbol.length))}`;
   }
   for (const [k, v] of Object.entries(fields)) if (typeof v === "string") body.set(k, v);
   if (airdrop !== undefined) body.set("airdrop", typeof airdrop === "string" ? airdrop : JSON.stringify(airdrop));

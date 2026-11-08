@@ -37,7 +37,7 @@ export type LaunchRequest = LaunchPairing & {
   firstBuy?: TradeQuote | null;
   /** The Platform Lookup Table, which keeps a launch with a first buy within one transaction. */
   lookupTable: AddressLookupTableAccount;
-  /** A Reward Launch's Reward Tax in basis points (100, 300 or 500); null for a standard Launch. */
+  /** A Reward Launch's Reward Tax in basis points (100, 200, 300, 400 or 500); null for a standard Launch. */
   rewardTaxBps?: number | null;
 };
 

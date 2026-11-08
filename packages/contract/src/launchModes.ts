@@ -24,9 +24,9 @@ export const AirdropRecipients = z
   .refine((list) => new Set(list.map((r) => r.wallet)).size === list.length, "each wallet may appear only once");
 export type AirdropRecipients = z.infer<typeof AirdropRecipients>;
 
-/** The Reward Tax rates a Reward Launch may choose, in basis points: 1%, 3% or 5%. */
-export const REWARD_TAX_RATES = [100, 300, 500] as const;
-export const RewardTaxBps = z.union([z.literal(100), z.literal(300), z.literal(500)]);
+/** The Reward Tax rates a Reward Launch may choose, in basis points: 1%, 2%, 3%, 4% or 5% (owner, 2026-11-07, #172). */
+export const REWARD_TAX_RATES = [100, 200, 300, 400, 500] as const;
+export const RewardTaxBps = z.union([z.literal(100), z.literal(200), z.literal(300), z.literal(400), z.literal(500)]);
 export type RewardTaxBps = z.infer<typeof RewardTaxBps>;
 
 /**
@@ -38,7 +38,7 @@ export type RewardPayoutAsset = z.infer<typeof RewardPayoutAsset>;
 
 /** A form field carrying a Reward Tax in basis points, or nothing for a standard Launch. */
 const rewardTaxField = z
-  .union([z.enum(["100", "300", "500"]), z.literal("")])
+  .union([z.enum(["100", "200", "300", "400", "500"]), z.literal("")])
   .optional()
   .transform((v) => (v ? (Number(v) as RewardTaxBps) : undefined));
 
