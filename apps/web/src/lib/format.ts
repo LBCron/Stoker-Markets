@@ -14,9 +14,13 @@ export function isSol(quote: Pick<QuoteRef, "mint">) {
   return quote.mint === WSOL_MINT;
 }
 
-/** Every Launch's coin has 6 decimals and a supply of 1B: the launch shape our curve rules pin on-chain. */
+/**
+ * Every new Launch's coin has 6 decimals and a supply of 1 trillion: the launch shape our curve rules pin on-chain
+ * (`LAUNCH_SHAPE`, ADR 0005, #166). It is the launch form's figure alone: a coin launched on an earlier shape keeps its
+ * own supply, so anything about a launched coin reads the API's figures (its market cap, its holders' supply).
+ */
 export const COIN_DECIMALS = 6;
-export const COIN_SUPPLY = 1_000_000_000;
+export const COIN_SUPPLY = 1_000_000_000_000;
 
 /** A share of the supply (0 to 1) as a percentage: two decimals below 1%, one above, and "<0.01%" for a trace. */
 export function formatShare(share: number) {

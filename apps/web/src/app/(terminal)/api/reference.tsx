@@ -73,7 +73,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "GET /launches/:mint",
         text: (
           <>
-            One Launch: curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+            One Launch: its <C>supply</C> in raw units (1 trillion coins at 6 decimals; a coin launched on the earlier 1 billion keeps it), curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
           </>
         ),
       },

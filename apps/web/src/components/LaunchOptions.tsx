@@ -17,9 +17,10 @@ const LIST_MAX_ROWS = 12;
 /** The Quote Asset a launch pairs with, as the launch options need it. */
 export type OptionsQuote = { mint: string; symbol: string; decimals: number };
 
-/** A share of the supply, to two decimals: 34,567,890 coins is 3.46%. */
+/** A share of a new coin's supply, to two decimals: 34,567,890,000 coins is 3.46%, and a trace under 0.01% says so. */
 export function supplyShare(raw: bigint) {
   const basisPoints = Number((raw * 10_000n) / (BigInt(COIN_SUPPLY) * 10n ** BigInt(COIN_DECIMALS)));
+  if (raw > 0n && basisPoints === 0) return "<0.01%";
   return `${(basisPoints / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 }
 

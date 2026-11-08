@@ -205,7 +205,11 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
               <dt>Supply after burns</dt>
               <dd>
                 <span className="mono">{token.holders ? compact(Number(token.holders.supply) / 10 ** 6) : "-"}</span> {symbol}
-                {burned && burned.coin && <span className={styles.sub}>{compact(Number(burned.amount) / 10 ** burned.coin.decimals)} burned of 1B</span>}
+                {burned && burned.coin && token.holders && (
+                  <span className={styles.sub}>
+                    {compact(Number(burned.amount) / 10 ** burned.coin.decimals)} burned of {compact(Number(BigInt(token.holders.supply) + burned.amount) / 10 ** burned.coin.decimals)}
+                  </span>
+                )}
               </dd>
             </div>
             <div className={`card ${styles.marketTile}`}>

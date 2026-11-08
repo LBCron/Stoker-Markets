@@ -14,7 +14,8 @@ import { connection, deliverWebhook, env, fundedWallet, launch, listQuotes, sign
 
 const SOL = (n: number) => BigInt(Math.round(n * LAMPORTS_PER_SOL));
 const USDC = (n: number) => BigInt(n * 1_000_000);
-const COIN_SUPPLY_WHOLE = 1_000_000_000;
+/** Every coin launched here has the launch shape's supply: 1T whole coins (#166). */
+const COIN_SUPPLY_WHOLE = 1_000_000_000_000;
 
 async function board(query: Partial<Record<keyof LaunchListQuery, string | number>> = {}) {
   const params = new URLSearchParams(Object.fromEntries(Object.entries(query).map(([k, v]) => [k, String(v)])));

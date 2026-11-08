@@ -46,7 +46,7 @@ const GRADUATED: LaunchFields = { name: "Cap and Gown", symbol: "GOWN", descript
 const TRADES = [
   { side: "buy", amount: BigInt(0.2 * LAMPORTS_PER_SOL) },
   { side: "buy", amount: BigInt(0.15 * LAMPORTS_PER_SOL) },
-  { side: "sell", amount: 20_000_000n * 1_000_000n },
+  { side: "sell", amount: 20_000_000_000n * 1_000_000n },
   { side: "buy", amount: BigInt(0.05 * LAMPORTS_PER_SOL) },
 ] as const;
 

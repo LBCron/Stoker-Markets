@@ -78,7 +78,7 @@ describe("a first buy", () => {
     // The board's market figures count it like any trade: the price it left, and its SOL as the day's volume.
     const { market } = (await getLaunch(prepared.mint)).launch!;
     expect(market.price).toBe(quote.firstBuy.priceAfter);
-    expect(market.marketCap?.quote).toBeCloseTo(quote.firstBuy.priceAfter * 1_000_000_000, 6);
+    expect(market.marketCap?.quote).toBeCloseTo(quote.firstBuy.priceAfter * 1_000_000_000_000, 6);
     expect(market.volume24h.raw).toBe(quote.firstBuy.amountIn);
     // The creator page counts half of its Platform Fee as the Creator's, like any other trade's.
     const share = (BigInt(quote.firstBuy.fees.platform) / 2n).toString();
@@ -294,7 +294,7 @@ describe("an airdrop", () => {
     const same = one();
     const cases: [string, Parameters<typeof prepare>[0]][] = [
       ["no first buy to pay it from", { creator, airdrop: [one()] }],
-      ["more coins than the first buy gets", { creator, firstBuy, airdrop: [one(COINS(900_000_000).toString())] }],
+      ["more coins than the first buy gets", { creator, firstBuy, airdrop: [one(COINS(900_000_000_000).toString())] }],
       ["the same wallet twice", { creator, firstBuy, airdrop: [same, same] }],
       ["the Creator's own wallet", { creator, firstBuy, airdrop: [{ wallet: creator, amount: "1" }] }],
       ["a program account", { creator, firstBuy, airdrop: [{ wallet: programAccount.toBase58(), amount: "1" }] }],

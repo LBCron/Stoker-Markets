@@ -3,13 +3,13 @@ import { ComputeBudgetProgram, Keypair, PublicKey, Transaction, sendAndConfirmTr
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  graduationBandOf, initializeV2Ix, LAUNCH_SHAPE, launchlabCoder, launchlabPdas, readCurveRuleGroups, rewardLaunchConstraints, RuleField, RuleOp,
-  standardLaunchConstraints, updateCurveRuleIx, WSOL_MINT, type InitializeParams,
+  EARLIER_LAUNCH_SHAPES, graduationBandOf, initializeV2Ix, LAUNCH_SHAPE, launchlabCoder, launchlabPdas, readCurveRuleGroups, rewardLaunchConstraints, RuleField, RuleOp,
+  standardLaunchConstraints, updateCurveRuleIx, WSOL_MINT, type InitializeParams, type RuleConstraint,
 } from "@launchpad/chain";
 import { PreparedTrade, TradeList, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, localnetKeys, mintLocalQuote, send } from "@launchpad/localnet";
 import {
-  connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, getLaunch, launch, listQuotes, prepare, refreshQuoteRegistry, signAndSend,
+  connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, getLaunch, launch, listQuotes, prepare, prepared, refreshQuoteRegistry, signAndSend,
 } from "./client";
 
 // The stack prices the local quotes in USD (tools/localnet LOCAL_QUOTE_PRICES_USD): SOL 150, USDC 1, NVDAx 180, JTO 2.5,
@@ -31,9 +31,11 @@ async function poolState(pool: string) {
 
 /**
  * A launch built straight from the IDL, bypassing our API, as anyone could send it. `totalBaseSell` other than our launch
- * shape's makes an off-shape launch.
+ * shape's makes an off-shape launch; `supply` other than its supply, a launch on another shape (the 1B one of earlier coins).
  */
-async function launchDirectly(quoteMint: PublicKey, quoteTokenProgram: PublicKey, graduationTargetRaw: BN, totalBaseSell = LAUNCH_SHAPE.totalBaseSell) {
+async function launchDirectly(
+  quoteMint: PublicKey, quoteTokenProgram: PublicKey, graduationTargetRaw: BN, totalBaseSell = LAUNCH_SHAPE.totalBaseSell, supply = LAUNCH_SHAPE.supply,
+) {
   const creator = await fundedWallet();
   const mint = Keypair.generate();
   const params: InitializeParams = {
@@ -42,9 +44,10 @@ async function launchDirectly(quoteMint: PublicKey, quoteTokenProgram: PublicKey
     name: "Direct", symbol: "DRCT", uri: "https://example.invalid/d.json", graduationTargetRaw,
   };
   const ix = initializeV2Ix(params);
-  if (!totalBaseSell.eq(LAUNCH_SHAPE.totalBaseSell)) {
-    const args = launchlabCoder.instruction.decode(ix.data)!.data as { curve_param: { Constant: { data: { total_base_sell: BN } } } };
+  if (!totalBaseSell.eq(LAUNCH_SHAPE.totalBaseSell) || !supply.eq(LAUNCH_SHAPE.supply)) {
+    const args = launchlabCoder.instruction.decode(ix.data)!.data as { curve_param: { Constant: { data: { supply: BN; total_base_sell: BN } } } };
     args.curve_param.Constant.data.total_base_sell = totalBaseSell;
+    args.curve_param.Constant.data.supply = supply;
     ix.data = launchlabCoder.instruction.encode("initialize_v2", args);
   }
   const tx = new Transaction().add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ix);
@@ -173,7 +176,8 @@ describe("curve rules cover every Quote Asset on-chain", () => {
 
 describe("a GlobalConfig our curve rules don't cover yet", () => {
   const jto = EXPECTED_TARGETS[2]!;
-  const offShape = new BN("700000000000000");
+  // 70% of the supply sold, not our 79.31% (LaunchLab's curve needs more than half sold, or it panics computing it).
+  const offShape = LAUNCH_SHAPE.supply.muln(7).divn(10);
 
   it("lets an off-shape launch onto our PlatformConfig, which the Indexer ignores, until the refresh writes its rule", async () => {
     // As for a GlobalConfig Raydium created after the last refresh: a rule that pins nothing but a positive raise.
@@ -189,6 +193,108 @@ describe("a GlobalConfig our curve rules don't cover yet", () => {
 
     await refreshQuoteRegistry();
     await expect(launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw), offShape)).rejects.toThrow(/0x1789|CurveParamNotMatchPlatformRule/);
+    expect((await listQuotes()).find((q) => q.symbol === "JTO")).toMatchObject({ launchable: true, graduationTarget: { raw: jto.raw } });
+  });
+});
+
+describe("the launch shape of 1T coins (#166) and the coins launched on the 1B shape before it", () => {
+  const jto = EXPECTED_TARGETS[2]!;
+  const platformConfig = () => new PublicKey(env().platform.platformConfig);
+  const [earlier] = EARLIER_LAUNCH_SHAPES;
+  /** A rule group as the Quote Registry wrote it before #166: the same constraints with the 1B supply and sale. */
+  const onEarlierShape = (group: RuleConstraint[]) =>
+    group.map((c) => c.field === RuleField.Supply ? { ...c, value: earlier.supply } : c.field === RuleField.TotalSellA ? { ...c, value: earlier.totalBaseSell } : c);
+  const rulesOnChain = async () => {
+    const groups = await readCurveRuleGroups(connection(), program(), platformConfig(), [globalConfigOf(jto.mint)]);
+    return groups.get(globalConfigOf(jto.mint).toBase58())!;
+  };
+  const valueOf = (group: RuleConstraint[], field: number) => group.find((c) => c.field === field)!.value.toString();
+
+  it("pins a supply of 1T coins, 793.1B of them sold on the curve, in both of every Quote Asset's rule groups", async () => {
+    expect(LAUNCH_SHAPE.supply.toString()).toBe("1000000000000000000");
+    expect(LAUNCH_SHAPE.totalBaseSell.toString()).toBe("793100000000000000");
+    const rules = await rulesOnChain();
+    for (const id of [0, 1]) {
+      expect(valueOf(rules.get(id)!, RuleField.Supply)).toBe(LAUNCH_SHAPE.supply.toString());
+      expect(valueOf(rules.get(id)!, RuleField.TotalSellA)).toBe(LAUNCH_SHAPE.totalBaseSell.toString());
+    }
+  });
+
+  it("keeps a coin launched on the 1B shape as it is: indexed, priced on its own supply and tradable, while the refresh moves the rules to 1T", async () => {
+    // The chain as it stood before #166: JTO's two groups pinning the 1B shape.
+    const { operations } = localnetKeys();
+    const band = graduationBandOf((await rulesOnChain()).get(0)!)!;
+    await send(connection(), [
+      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 0, onEarlierShape(standardLaunchConstraints(band))),
+      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 1, onEarlierShape(rewardLaunchConstraints(band))),
+    ], [operations]);
+    // While they do, the new shape is refused on-chain, so the API hands out no launch against JTO and says why, and a
+    // launch on the old shape lands and is indexed as ours.
+    await expect(launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw))).rejects.toThrow(/0x1789|CurveParamNotMatchPlatformRule/);
+    const refused = await prepare({ creator: (await fundedWallet()).publicKey.toBase58(), quoteMint: jto.mint.toBase58() });
+    expect(refused.status).toBe(422);
+    expect(await refused.text()).toMatch(/Launches against JTO open once its launch rules are set on-chain/);
+    const signature = await launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw), earlier.totalBaseSell, earlier.supply);
+    expect(await (await deliverWebhook([signature])).json()).toMatchObject({ launched: 1 });
+    const tx = await connection().getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+    const mint = tx!.meta!.postTokenBalances!.find((b) => b.mint !== jto.mint.toBase58())!.mint;
+
+    // The refresh rewrites both groups to the 1T shape; from then on only that shape launches.
+    await refreshQuoteRegistry();
+    const rules = await rulesOnChain();
+    expect(valueOf(rules.get(0)!, RuleField.Supply)).toBe(LAUNCH_SHAPE.supply.toString());
+    expect(valueOf(rules.get(1)!, RuleField.TotalSellA)).toBe(LAUNCH_SHAPE.totalBaseSell.toString());
+    await expect(launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw), earlier.totalBaseSell, earlier.supply)).rejects.toThrow(
+      /0x1789|CurveParamNotMatchPlatformRule/,
+    );
+    await expect(launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw))).resolves.toBeTypeOf("string");
+    expect((await listQuotes()).find((q) => q.symbol === "JTO")).toMatchObject({ launchable: true, graduationTarget: { raw: jto.raw } });
+
+    // The earlier coin keeps its 1B supply: its market cap is its price times 1B coins, and it still trades through the API.
+    const trader = await fundedWallet();
+    await mintLocalQuote(connection(), jto.mint, trader.publicKey, 10_000_000_000n);
+    const p = await prepared(trader, mint, "buy", 1_000_000_000n);
+    await deliverWebhook([await signAndSend(p, trader)]);
+    const { launch: coin } = await getLaunch(mint);
+    expect(coin!.curve.status).toBe("live");
+    expect(coin!.market.price).toBeGreaterThan(0);
+    expect(coin!.market.marketCap!.quote).toBeCloseTo(coin!.market.price! * 1_000_000_000, 6);
+    expect(coin!.supply).toBe(earlier.supply.toString());
+    const holders = await (await fetch(`${env().apiUrl}/v1/launches/${mint}/holders`)).json() as { supply: string };
+    expect(holders.supply).toBe(earlier.supply.toString());
+  });
+});
+
+describe("the 1T shape at the largest Graduation Target a curve rule allows", () => {
+  const jto = EXPECTED_TARGETS[2]!;
+
+  it("launches and trades: LaunchLab's curve maths holds 1T coins against a raise near the u64 limit", async () => {
+    // The refresh keeps a band's top within a u64 (rules.ts targetFits), so the largest target it ever pins is u64 max / 1.1.
+    // Raised against 1e18 raw coins it is the far end of the curve's u128 arithmetic; a loose rule lets it launch here.
+    const largest = new BN("18446744073709551615").muln(10).divn(11);
+    const { operations } = localnetKeys();
+    const loose = [{ field: RuleField.TotalFundRaisingB, op: RuleOp.Gte, value: new BN(1) }];
+    const platformConfig = new PublicKey(env().platform.platformConfig);
+    await send(connection(), [updateCurveRuleIx(program(), operations.publicKey, platformConfig, globalConfigOf(jto.mint), 0, loose)], [operations]);
+    try {
+      const signature = await launchDirectly(jto.mint, TOKEN_PROGRAM_ID, largest);
+      expect(await (await deliverWebhook([signature])).json()).toMatchObject({ launched: 1 });
+      const tx = await connection().getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+      const mint = tx!.meta!.postTokenBalances!.find((b) => b.mint !== jto.mint.toBase58())!.mint;
+      const trader = await fundedWallet();
+      // 10 JTO: enough to move the curve, small enough that its Platform Fee leaves later tests' Ledger figures alone.
+      const spend = 10_000_000_000n;
+      await mintLocalQuote(connection(), jto.mint, trader.publicKey, spend);
+      const p = await prepared(trader, mint, "buy", spend);
+      await deliverWebhook([await signAndSend(p, trader)]);
+      const bought = BigInt(p.quote.amountOut);
+      expect(bought).toBeGreaterThan(0n);
+      const sold = await prepared(trader, mint, "sell", bought / 2n);
+      await deliverWebhook([await signAndSend(sold, trader)]);
+      expect(BigInt(sold.quote.amountOut)).toBeGreaterThan(0n);
+    } finally {
+      await refreshQuoteRegistry();
+    }
     expect((await listQuotes()).find((q) => q.symbol === "JTO")).toMatchObject({ launchable: true, graduationTarget: { raw: jto.raw } });
   });
 });
@@ -274,9 +380,9 @@ describe("trading on a non-SOL curve", () => {
       ["sell", sell.amountOut, coins.toString()],
       ["buy", USDC(10).toString(), coins.toString()],
     ]);
-    // The price is in whole USDC per whole coin: a fresh curve raising 150 USDC for 793.1M coins starts near 5e-8.
-    expect(trades[1]!.price).toBeGreaterThan(1e-8);
-    expect(trades[1]!.price).toBeLessThan(1e-6);
+    // The price is in whole USDC per whole coin: a fresh curve raising 150 USDC for 793.1B coins starts near 5e-11.
+    expect(trades[1]!.price).toBeGreaterThan(1e-11);
+    expect(trades[1]!.price).toBeLessThan(1e-9);
     const { launch: summary } = await getLaunch(coin.mint);
     expect(summary).toMatchObject({ quote: { symbol: "USDC", decimals: 6 }, graduationTarget: usdc.raw, curve: { status: "live" } });
     expect(BigInt(summary!.curve.raised)).toBeLessThan(USDC(0.2));

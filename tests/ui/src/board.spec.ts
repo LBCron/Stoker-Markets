@@ -35,9 +35,9 @@ async function coinsHeld(owner: PublicKey, mint: string) {
   return accounts.value.reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
 }
 
-/** A share of the 1B supply as the holders card writes it. */
+/** A share of a new coin's 1T supply (1e18 raw) as the holders card writes it. */
 const percentOf = (raw: bigint) => {
-  const pct = (Number(raw) / 1e15) * 100;
+  const pct = (Number(raw) / 1e18) * 100;
   return `${pct.toFixed(pct < 1 ? 2 : 1)}%`;
 };
 

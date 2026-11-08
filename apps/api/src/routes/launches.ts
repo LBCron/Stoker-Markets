@@ -153,6 +153,7 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
     description: m?.description ?? null,
     links: Object.fromEntries(LINK_KINDS.map((k) => [k, m?.[k] ?? null])) as LaunchLinks,
     graduationTarget: l.graduationTarget,
+    supply: l.supply,
     curve: curveProgress(r.curve, r.graduation !== null),
     graduation: r.graduation && {
       pool: r.graduation.pool,

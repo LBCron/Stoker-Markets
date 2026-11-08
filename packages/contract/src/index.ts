@@ -127,6 +127,11 @@ export const LaunchSummary = z.object({
   links: LaunchLinks,
   /** Raw units of the Quote Asset, as a decimal string. */
   graduationTarget: z.string(),
+  /**
+   * The coin's total supply at launch, raw units as a decimal string: the launch shape it launched on (1T coins since
+   * #166, 1B for earlier coins), which every figure about the coin divides by.
+   */
+  supply: z.string().regex(/^\d+$/),
   curve: CurveProgress,
   /** Set once Raydium has moved the Launch into its CPMM pool, where it trades from then on. */
   graduation: Graduation.nullable(),
