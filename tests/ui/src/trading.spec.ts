@@ -2,7 +2,7 @@
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { MarkList } from "@launchpad/contract";
-import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, markTooltip, postMarkAt, postOnX, runMentions, stackEnv, test, tradeViaApi } from "./fixtures";
+import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, hoverMark, markTooltip, postMarkAt, postOnX, runMentions, stackEnv, test, tradeViaApi } from "./fixtures";
 import { connectTestWallet } from "./wallet";
 
 const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
@@ -171,12 +171,12 @@ test("the chart marks who traded, the visitor's own trades among them, and the p
   await context.route("https://x.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>post</title>" }));
   await expect.poll(() => postMarkAt(page), { timeout: 30_000 }).not.toBeNull();
   const at = (await postMarkAt(page))!;
-  await page.mouse.move(at.x - 30, at.y);
-  await page.mouse.move(at.x, at.y, { steps: 4 });
-  await expect(markTooltip(page)).toContainText(`@mark_watcher on X: “The MARK chart is heating up ${mint}” Market cap then:`);
-  const popup = page.waitForEvent("popup");
+  await hoverMark(page, at);
+  await expect(markTooltip(page)).toContainText(`@mark_watcher on X: “The MARK chart is heating up ${mint.slice(0, 4)}…${mint.slice(-4)}” Market cap then:`);
+  // The post opens without an opener, so it arrives as a new page of the context rather than as this page's popup.
+  const opened = context.waitForEvent("page");
   await page.mouse.click(at.x, at.y);
-  expect((await popup).url()).toBe(`https://x.com/mark_watcher/status/${postId}`);
+  await expect(await opened).toHaveURL(`https://x.com/mark_watcher/status/${postId}`);
 
   // Neither feed: no marks and no legend.
   await toggles.getByRole("button", { name: "Posts" }).click();

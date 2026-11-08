@@ -66,8 +66,16 @@ function tradeText(m: TradeMark, ctx: Context) {
   return text;
 }
 
+/**
+ * A word too long for the tooltip's width (a mint address, a link) runs out of its box and over the mark itself, where it
+ * takes the click meant for the mark: such a word is shortened the way the site shortens an address.
+ */
+const LONG_WORD = /\S{25,}/g;
+const shortenWords = (text: string) => text.replace(LONG_WORD, (w) => `${w.slice(0, 4)}…${w.slice(-4)}`);
+
 function mentionText(m: MentionMark, ctx: Context) {
-  const words = m.text.length > TEXT_MAX ? `${m.text.slice(0, TEXT_MAX - 1).trimEnd()}…` : m.text;
+  const short = shortenWords(m.text);
+  const words = short.length > TEXT_MAX ? `${short.slice(0, TEXT_MAX - 1).trimEnd()}…` : short;
   const cap = capText(m.marketCap, ctx);
   return `@${m.author.handle} on X: “${words}”${cap ? ` Market cap then: ${cap}.` : ""} Click to open the post.`;
 }

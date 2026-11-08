@@ -105,10 +105,11 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
         onReset: () => chart?.activeChart().resetData(),
         marks: () => live.current.shown,
         wallet: () => live.current.wallet,
+        // The library asks for marks range by range, so every answer adds to what a click can find, until they are cleared.
         onMarks: (answered) => {
           if (gone) return;
-          targets.current = answered;
-          setMarkCount(answered.size);
+          for (const [id, target] of answered) targets.current.set(id, target);
+          setMarkCount(targets.current.size);
         },
         onBars: () => chart?.activeChart().refreshMarks(),
       },
@@ -193,6 +194,8 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
   // The library's refresh only adds what the datafeed answers, so the marks drawn are cleared first.
   useEffect(() => {
     if (state !== "ready" || !widget.current) return;
+    targets.current = new Map();
+    setMarkCount(0);
     widget.current.activeChart().clearMarks();
     widget.current.activeChart().refreshMarks();
   }, [state, shown, wallet]);
@@ -253,24 +256,26 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
               </button>
             ))}
           </div>
-          <div className={`segmented ${styles.choice}`} role="group" aria-label="Marks on the chart">
-            <button
-              type="button"
-              aria-pressed={shown.trades !== "none"}
-              title="Who traded, in circles on the candles"
-              onClick={() => setShown((s) => ({ ...s, trades: s.trades === "none" ? "key" : "none" }))}
-            >
-              Trades
-            </button>
-            <button
-              type="button"
-              aria-pressed={shown.mentions}
-              title="Posts on X that named the coin, in circles on the candles"
-              onClick={() => setShown((s) => ({ ...s, mentions: !s.mentions }))}
-            >
-              Posts
-            </button>
-          </div>
+          {hasTrades && (
+            <div className={`segmented ${styles.choice}`} role="group" aria-label="Marks on the chart">
+              <button
+                type="button"
+                aria-pressed={shown.trades !== "none"}
+                title="Who traded, in circles on the candles"
+                onClick={() => setShown((s) => ({ ...s, trades: s.trades === "none" ? "key" : "none" }))}
+              >
+                Trades
+              </button>
+              <button
+                type="button"
+                aria-pressed={shown.mentions}
+                title="Posts on X that named the coin, in circles on the candles"
+                onClick={() => setShown((s) => ({ ...s, mentions: !s.mentions }))}
+              >
+                Posts
+              </button>
+            </div>
+          )}
           <div className={`segmented ${styles.intervals}`} role="group" aria-label="Candle interval">
             {CANDLE_INTERVALS.map((i) => (
               <button key={i} type="button" aria-pressed={i === interval} title={`${INTERVAL_LABEL[i]} candles`} onClick={() => changeInterval(i)}>

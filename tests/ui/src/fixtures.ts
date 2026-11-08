@@ -285,6 +285,15 @@ export async function postMarkAt(page: Page) {
 /** The chart's tooltip, which the library draws in its own frame as a mark is hovered. */
 export const markTooltip = (page: Page) => page.frameLocator("[data-chart] iframe").locator('[class*="tooltip-"][class*="show-"]');
 
+/** Brings the pointer over a mark until the library shows its tooltip: now and then the first arrival is not taken. */
+export async function hoverMark(page: Page, at: { x: number; y: number }) {
+  await expect(async () => {
+    await page.mouse.move(at.x - 30, at.y);
+    await page.mouse.move(at.x, at.y, { steps: 4 });
+    await expect(markTooltip(page)).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
 /** Runs the Reward Engine once, as its Cron Trigger would: harvests, sells (for a Quote Asset payout), opens and pays rounds. */
 export async function runRewardRounds() {
   const { apiUrl, operatorToken } = stackEnv();
