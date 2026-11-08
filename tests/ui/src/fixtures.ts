@@ -230,7 +230,7 @@ export async function runFeeCollector() {
 }
 
 /** Puts a post on X in the stand-in for twitterapi.io (#160); its author's picture is the stand-in's, one colour per handle. */
-export async function postOnX(post: { id: string; text: string; author: { id: string; userName: string; name: string } }) {
+export async function postOnX(post: { id: string; text: string; urls?: string[]; author: { id: string; userName: string; name: string } }) {
   const res = await fetch(`${stackEnv().x.url}/stand-in/posts`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ posts: [post] }) });
   if (!res.ok) throw new Error(`posting to the X stand-in failed: ${res.status}`);
 }

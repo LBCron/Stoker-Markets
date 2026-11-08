@@ -1,4 +1,4 @@
-import { MARKS_PER_CANDLE, type MarkList, type MarkRole, type MentionMark, type TradeMark } from "@launchpad/contract";
+import { avatarHues, MARKS_PER_CANDLE, type MarkList, type MarkRole, type MentionMark, type TradeMark } from "@launchpad/contract";
 import type { ChartLook } from "./chartTheme";
 import type { Mark } from "./charting";
 import { COIN_DECIMALS, formatPriceCompact, formatUnits, shortAddress } from "./format";
@@ -37,6 +37,16 @@ type Context = {
 };
 
 const MARK_SIZE = 18;
+
+/**
+ * A wallet's generated avatar as an inline picture, the same two hues the API's `/avatars/wallet/` draws: the library
+ * fetches a mark's picture again as it redraws, and a page of marks would otherwise never stop fetching.
+ */
+function walletPicture(wallet: string) {
+  const [a, b] = avatarHues(wallet);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${a} 70% 56%)"/><stop offset="1" stop-color="hsl(${b} 72% 38%)"/></linearGradient></defs><rect width="64" height="64" fill="url(#g)"/></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 const TEXT_MAX = 160;
 
 const compactNumber = (n: number) => n.toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 2 });
@@ -107,7 +117,7 @@ export function toChartMarks(list: MarkList, shown: MarksShown, ctx: Context) {
         minSize: MARK_SIZE,
         borderWidth: 2,
         hoveredBorderWidth: 3,
-        imageUrl: m.avatarUrl,
+        imageUrl: m.x?.avatarUrl ?? walletPicture(m.wallet),
       });
     }
   if (shown.mentions)

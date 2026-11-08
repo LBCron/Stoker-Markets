@@ -3,7 +3,7 @@
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, postOnX, runFeeCollector, runMentions, runRewardRounds, SEED_CREATOR,
+  coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, postOnX, runFeeCollector, runMentions, runRewardRounds, SEED_CREATOR, stackEnv,
   SEED_HOLDER, tradeViaApi,
   type LaunchFields,
 } from "./fixtures";
@@ -92,7 +92,9 @@ setup("seed the board", async () => {
   // chart carries a post's mark at a market cap that follows from the fixed trades.
   await postOnX({
     id: "1900000000000000001",
-    text: `Harbor Lights is lit tonight, the night shift is buying ${mints.get("Harbor Lights")}`,
+    // Named by its page's link, not its mint in the text: the mint differs every run, and the tooltip's shot shows the text.
+    text: "Harbor Lights is lit tonight, the night shift is buying.",
+    urls: [`${new URL(stackEnv().webUrl!).host}/coin/${mints.get("Harbor Lights")}`],
     author: { id: "5501", userName: "harbor_watch", name: "Harbor Watch" },
   });
   await runMentions();
