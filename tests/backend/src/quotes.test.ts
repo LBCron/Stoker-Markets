@@ -259,6 +259,7 @@ describe("the launch shape of 1T coins (#166) and the coins launched on the 1B s
     expect(coin!.curve.status).toBe("live");
     expect(coin!.market.price).toBeGreaterThan(0);
     expect(coin!.market.marketCap!.quote).toBeCloseTo(coin!.market.price! * 1_000_000_000, 6);
+    expect(coin!.supply).toBe(earlier.supply.toString());
     const holders = await (await fetch(`${env().apiUrl}/v1/launches/${mint}/holders`)).json() as { supply: string };
     expect(holders.supply).toBe(earlier.supply.toString());
   });
