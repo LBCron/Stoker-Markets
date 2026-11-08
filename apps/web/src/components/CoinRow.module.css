@@ -1,9 +1,11 @@
 /*
   The columns are set once on the table (`--cols` in CoinTable.module.css), so the header line and every row agree.
   A row is 40px (#135: fifteen to twenty coins on a laptop): the pair above the name in the first cell, every figure
-  right-aligned in tabular mono under its name, a hairline between rows and a hover tint; the row is the link.
+  right-aligned in tabular mono under its name, a hairline between rows and a hover tint; the coin's link is
+  stretched over the row, and the copy and explorer controls close it (#161).
 */
 .row {
+  position: relative;
   display: grid;
   grid-template-columns: var(--cols);
   align-items: center;
@@ -12,7 +14,6 @@
   padding: 0 12px;
   border-bottom: 1px solid var(--line);
   font-size: var(--text-caption);
-  text-decoration: none;
   white-space: nowrap;
   transition: background-color var(--dur-fast) var(--ease-standard);
 }
@@ -23,12 +24,24 @@
   }
 }
 
-.row:focus-visible {
+/* The coin cell is the row's link, stretched over the whole row; the actions sit above it. */
+.coin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.coin:focus-visible {
   outline: none;
+}
+
+.coin:focus-visible::after {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .coin {
+  color: inherit;
+  text-decoration: none;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
@@ -131,10 +144,12 @@
   color: var(--ink-2);
 }
 
+/* A lead before the bar, so it never reads as part of the market cap right-aligned beside it (owner, 2026-11-08). */
 .curve {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding-left: 24px;
 }
 
 /* The curve's progress as a thin heat bar, the one thing drawn in a row. */
@@ -174,6 +189,10 @@
   color: var(--ink-3);
 }
 
+.actions {
+  justify-self: end;
+}
+
 /* The figures past the changes are grid cells at a desktop (the wrapper has no box) and one line on a phone. */
 .facts {
   display: contents;
@@ -198,6 +217,8 @@
   .price { grid-area: price; overflow-wrap: anywhere; }
   .delta24h { grid-area: delta24h; }
   .delta5m { display: none; }
+  /* The controls close the figures' line, at its right edge, and wrap under it only when the line is full. */
+  .actions { margin-left: auto; }
   .facts {
     grid-area: facts;
     display: flex;
@@ -215,4 +236,5 @@
     color: var(--ink-3);
   }
   .track { width: 44px; }
+  .curve { padding-left: 0; }
 }

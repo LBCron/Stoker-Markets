@@ -5,7 +5,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { and, asc, count, desc, eq, ilike, like, or, sql, type SQL } from "drizzle-orm";
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
-  LaunchListQuery, LINK_KINDS, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
+  LaunchListQuery, LINK_KINDS, SPARKLINE_POINTS, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
   type LaunchSummary, type MarketValue,
 } from "@launchpad/contract";
 import { curves, graduations, launches, launchMarkets, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
@@ -196,15 +196,50 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
   };
 }
 
+/**
+ * Each traded Launch's price over the last 24 hours (LaunchSummary.sparkline, #161): one point an hour, the latest last,
+ * each the price after the last trade at or before its hour, or the curve's starting price (the price before the first
+ * trade) for an hour before any. One query for the whole page, so the board's cards cost one request; a Launch nobody
+ * has traded gets no rows and so an empty line.
+ */
+async function sparklines(db: Db, mints: string[]) {
+  const lines = new Map<string, number[]>(mints.map((m) => [m, []]));
+  if (mints.length === 0) return lines;
+  const list = sql.join(mints.map((m) => sql`${m}`), sql`, `);
+  const rows = await db.execute<{ mint: string; close: number | string }>(sql`
+    select m.mint, coalesce(
+      (select ${trades.priceAfter} from ${trades}
+        where ${trades.mint} = m.mint and ${trades.blockTime} <= now() - make_interval(hours => ${SPARKLINE_POINTS - 1} - h.i)
+        order by ${trades.slot} desc, ${trades.eventIndex} desc limit 1),
+      (select ${trades.priceBefore} from ${trades} where ${trades.mint} = m.mint order by ${trades.slot} asc, ${trades.eventIndex} asc limit 1)
+    ) as close
+    from unnest(array[${list}]::text[]) as m(mint)
+    cross join generate_series(0, ${SPARKLINE_POINTS - 1}) as h(i)
+    where exists (select 1 from ${trades} where ${trades.mint} = m.mint)
+    order by m.mint, h.i`);
+  for (const r of rows) lines.get(r.mint)?.push(Number(r.close));
+  return lines;
+}
+
 /** The board: every Launch, sorted and filtered (see LaunchListQuery), a page at a time. */
 launchRoutes.get("/launches", async (c) => {
   const query = LaunchListQuery.safeParse(c.req.query());
   if (!query.success) return c.json({ error: "invalid launch list query", details: query.error.issues }, 400);
-  const { sort, limit, offset, ...filters } = query.data;
-  const rows = await queryLaunches(c.get("db"), filters, sort, limit + 1, offset);
+  const { sort, limit, offset, fields = [], ...filters } = query.data;
+  const db = c.get("db");
+  const found = await queryLaunches(db, filters, sort, limit + 1, offset);
+  const rows = found.slice(0, limit);
+  const lines = fields.includes("sparkline") ? await sparklines(db, rows.map((r) => r.launch.mint)) : null;
   const body: LaunchList = {
-    launches: rows.slice(0, limit).map((r) => toSummary(c.get("cfg"), r)),
-    nextOffset: rows.length > limit ? offset + limit : null,
+    launches: rows.map((r) => {
+      const summary = toSummary(c.get("cfg"), r);
+      if (!lines) return summary;
+      // The last point is the price now, the market's own: within one slot the trade indexed last sets it (insertTrade).
+      const line = lines.get(r.launch.mint) ?? [];
+      if (line.length > 0 && summary.market.price !== null) line[line.length - 1] = summary.market.price;
+      return { ...summary, sparkline: line };
+    }),
+    nextOffset: found.length > limit ? offset + limit : null,
   };
   return c.json(body);
 });

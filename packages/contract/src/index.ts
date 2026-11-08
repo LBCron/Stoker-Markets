@@ -138,6 +138,13 @@ export const LaunchSummary = z.object({
   /** A Reward Launch's Reward Tax; null for a standard coin. */
   rewardTax: RewardTax.nullable(),
   market: LaunchMarket,
+  /**
+   * The price over the last 24 hours, in whole Quote Asset units per whole coin: 24 points an hour apart, the latest last,
+   * each the price after the last trade at or before its hour (for an hour before the coin's first trade, the curve's
+   * starting price), so the last point is the price now. Empty for a coin nobody has traded. Only in a list asked for it
+   * (`GET /v1/launches?fields=sparkline`); absent otherwise.
+   */
+  sparkline: z.array(z.number()).optional(),
   /** Copy Protection (#120, ADR 0012): until when nobody else may launch a coin here with this one's name, ticker or image. */
   protection: z.object({ until: z.iso.datetime() }),
   /**

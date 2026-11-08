@@ -304,8 +304,33 @@ describe("sorting and filtering the board", () => {
     expect(last.nextOffset).toBeNull();
   });
 
+  it("gives each coin's price over the last day when asked, one point an hour with the latest last, and nothing for a coin nobody traded", async () => {
+    // Left out unless asked for: the line costs a query of its own.
+    expect((await only()).launches.every((l) => l.sparkline === undefined)).toBe(true);
+    const list = await only({ fields: "sparkline" });
+    const byMint = new Map(list.launches.map((l) => [l.mint, l]));
+    expect(byMint.get(coin.quiet)!.sparkline).toEqual([]);
+    // Every SOL coin here starts on the same curve, so the untraded one's price is where the others started.
+    const start = byMint.get(coin.quiet)!.market.price!;
+    for (const mint of [coin.small, coin.big, coin.sold]) {
+      const l = byMint.get(mint)!;
+      const line = l.sparkline!;
+      expect(line).toHaveLength(24);
+      // Each coin was bought in the last hour, so every earlier hour holds the curve's starting price and the last
+      // point is the price now.
+      for (const point of line.slice(0, 23)) expect(point).toBeCloseTo(start, 15);
+      expect(line[23]).toBe(l.market.price);
+      expect(line[23]).toBeGreaterThan(start);
+    }
+    // In the USDC coin's own Quote Asset, like its price.
+    const dollar = byMint.get(coin.dollar)!;
+    expect(dollar.sparkline![23]).toBe(dollar.market.price);
+    // The same page with the line as without it.
+    expect(mints(list)).toEqual(mints(await only()));
+  });
+
   it("refuses a query it doesn't understand instead of ignoring it", async () => {
-    for (const q of ["sort=hot", "category=stonks", "status=dead", "limit=0", "limit=101", "offset=-1", "quote=not-a-mint"]) {
+    for (const q of ["sort=hot", "category=stonks", "status=dead", "limit=0", "limit=101", "offset=-1", "quote=not-a-mint", "fields=holders", "fields=sparkline,candles"]) {
       const res = await fetch(`${env().apiUrl}/v1/launches?${q}`);
       expect(res.status, q).toBe(400);
     }
@@ -438,6 +463,13 @@ describe("a graduated Launch on the board", () => {
     expect(afterSell.market.price).toBe(sell.quote.priceAfter);
     expect(afterSell.market.price).toBeLessThan(afterBuy.market.price!);
     expect(BigInt(afterSell.market.volume24h.raw)).toBeGreaterThan(BigInt(afterBuy.market.volume24h.raw));
+  });
+
+  it("draws a graduated coin's line on into its pool", async () => {
+    const [l] = (await only({ fields: "sparkline", status: "graduated" })).launches;
+    expect(l!.mint).toBe(coin.graduated);
+    expect(l!.sparkline).toHaveLength(24);
+    expect(l!.sparkline![23]).toBe(l!.market.price);
   });
 
   it("sorts graduated Launches after live and graduating ones when looking for coins near Graduation", async () => {

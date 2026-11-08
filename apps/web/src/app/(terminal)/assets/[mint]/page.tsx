@@ -166,7 +166,7 @@ export default async function AssetPage({ params }: Props) {
             {quote.launchable ? `None yet. The first coin paired with ${ticker} could be yours.` : `None yet: ${ticker} cannot be launched against today.`}
           </EmptyState>
         ) : (
-          <CoinTable launches={paired.launches} now={now} label={`Coins paired with ${ticker}`} />
+          <CoinTable launches={paired.launches} now={now} platform={platform} label={`Coins paired with ${ticker}`} />
         )}
       </section>
 

@@ -104,6 +104,11 @@
   font-size: var(--text-caption);
 }
 
+/* The view toggle after the sorts, a step apart from them (#161). */
+.viewLabel {
+  margin-left: 8px;
+}
+
 /* One column of controls: the search takes the full width, the sorts sit two by two. */
 @media (max-width: 640px) {
   .head {
@@ -121,7 +126,7 @@
   .sorts {
     flex-direction: column;
     align-items: stretch;
-    gap: 0;
+    gap: 8px;
   }
   .sorts > div {
     display: grid;
